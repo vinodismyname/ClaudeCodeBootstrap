@@ -1,0 +1,122 @@
+You are an expert in configuring Model Context Protocol (MCP) servers for Claude Code. MCP servers extend Claude Code's capabilities by allowing access to external tools, databases, and services.
+
+# Raw Project Data
+
+You will be provided with:
+1. The user's project plan
+2. A sample of files from the project directory
+3. Any user-specified MCP tools
+
+## User's Project Plan:
+<plan_data>
+{{ user_plan_content }}
+</plan_data>
+
+## Project File Samples:
+<file_samples>
+{% for path, content in project_file_samples.items() %}
+File: {{ path }}
+Content:
+```
+{{ content|truncate(300) }}
+```
+---
+{% endfor %}
+</file_samples>
+
+## User-Specified MCP Tools:
+{% if user_mcp_tools_input and user_mcp_tools_input|length > 0 %}
+The user has specified the following MCP tools:
+{% for tool in user_mcp_tools_input %}
+- {{ tool.name }}
+{% endfor %}
+{% else %}
+The user has not specified any MCP tools.
+{% endif %}
+
+# Your Task
+
+First, analyze the raw project data provided above to infer:
+- The project's primary purpose and goals
+- The main programming languages and key technologies/frameworks likely in use
+- A suitable project archetype or category (e.g., web application, backend API, data science project, etc.)
+
+Then, based on your inferences and the user-specified tools:
+1. Review the user's specified tools (if any).
+2. Based on your inference of the project's needs, suggest any additional relevant MCP tools.
+3. For each tool (user-specified and your suggestions), provide a configuration object. When doing so, consider security best practices:
+    - For database tools, suggest read-only access if write access is not explicitly required by the project plan.
+    - For tools requiring API keys or secrets, ensure these are configured via the `env` field rather than directly in `args`.
+    - Prefer tools from trusted sources if multiple options exist.
+
+Return a JSON object where keys are concise, descriptive server names (e.g., "web_search_main", "project_database_ro") and values are configuration objects.
+Each configuration object should have:
+- "command": (string, e.g., "npx", "uvx")
+- "args": (list of strings, e.g., ["-y", "@anthropic-ai/web-search-mcp-claude-code"])
+- "env": (optional dict for environment variables, e.g., {"API_KEY": "value_or_placeholder_for_user_to_fill"})
+- "transport": (optional string, e.g., "stdio" or "sse")
+- "url": (optional string, if transport is sse)
+- "description": (optional string, brief tool description)
+- "startupTimeoutMillis": (optional integer, e.g., 10000, for server startup timeout)
+
+## Configuration Format
+
+The final .mcp.json file will have this structure:
+```json
+{
+  "servers": {
+    "tool_server_name_key": {
+      "command": "npx",
+      "args": ["-y", "@package/name", "additional_args"],
+      "env": {
+        "ENV_VAR": "value"
+      },
+      "transport": "stdio",
+      "startupTimeoutMillis": 10000,
+      "description": "Example tool server"
+    }
+    // ... more servers
+  }
+}
+```
+
+## Common MCP Server Setup Patterns
+
+1. Stdio servers (default): `npx -y @package/name [args]`
+2. SSE servers: These need a URL and the transport flag set to SSE
+3. Environment variables: Many servers need API keys or other credentials. Use placeholders like "YOUR_API_KEY_HERE" if the actual value is unknown.
+
+## Common MCP Servers
+
+Here are some common MCP servers and their setup commands:
+- web_search: `npx -y @anthropic-ai/web-search-mcp-claude-code`
+- postgres: `npx -y @modelcontextprotocol/server-postgres postgresql://user:pass@host/db`
+- jira: `npx -y @anthropic-ai/jira-mcp-claude-code`
+- github: `npx -y @github/mcp-server`
+- file_upload: `npx -y @anthropic-ai/file-upload-mcp-claude-code`
+- documents: `npx -y @anthropic-ai/document-reader-mcp-claude-code`
+- filesystem: `npx -y @modelcontextprotocol/server-filesystem ./path/to/files`
+
+## Project Type Recommendations
+
+For web applications:
+- github: For repository access and PR management
+- web_search: For documentation lookup
+- filesystem: For accessing project files
+
+For backend/API projects:
+- database tools (postgres, mongodb, etc.): For database access (consider read-only first)
+- github: For repository access
+- web_search: For documentation lookup
+
+For data science projects:
+- filesystem: For accessing data files
+- web_search: For research and documentation
+- documents: For reading research papers or datasets
+
+For mobile applications:
+- github: For repository access
+- web_search: For documentation lookup
+- filesystem: For accessing project files
+
+Return only the JSON object. Format in proper JSON that can be parsed directly. Do not include any tools where you cannot determine appropriate configuration based on the information provided.

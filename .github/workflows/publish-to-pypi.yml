@@ -1,0 +1,36 @@
+name: Publish Python Package to PyPI
+
+on:
+  release:
+    types: [created] 
+
+permissions:
+  id-token: write 
+  contents: read  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi 
+      url: https://pypi.org/p/ClaudeCodeBootstrap
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v1
+
+      - name: Build package
+        run: uv build --no-sources 
+
+      - name: Publish package to PyPI
+        run: uv publish dist/* 

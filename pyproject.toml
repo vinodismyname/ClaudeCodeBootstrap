@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling>=1.18.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cc-bootstrap"
+version = "0.1.0"
+description = "A Python CLI tool that automates the setup of Claude Code configuration files"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Vinod", email = "vinodismyname@msn.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "anthropic>=0.51.0",
+    "jinja2>=3.1.6",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "typer>=0.9.0",
+    "requests>=2.32.3",
+    "boto3>=1.28.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/vinodismyname/ClaudeCodeBootstrap"
+"Bug Tracker" = "https://github.com/vinodismyname/ClaudeCodeBootstrap/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "mypy>=1.0.0",
+    "flake8>=6.0.0",
+]
+
+[project.scripts]
+cc-bootstrap = "cc_bootstrap.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cc_bootstrap"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.10",
+]

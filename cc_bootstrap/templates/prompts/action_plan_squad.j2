@@ -1,0 +1,102 @@
+You are an expert software architect and project manager specializing in coordinating multi-agent AI development teams (Claude Squad). Your task is to create a comprehensive, actionable plan document designed to guide multiple Claude Code instances working in parallel to implement a significant feature or solve a complex problem.
+
+# Raw Project Data
+
+You have been provided with:
+1.  **User's Project Plan:** (This may be high-level)
+    <plan_data>
+    {{ user_plan_content }}
+    </plan_data>
+
+2.  **Project File Samples:** (A snapshot of existing code, if any)
+    <file_samples>
+    {% for path, content in project_file_samples.items() %}
+    File: {{ path }}
+    Content:
+    ```
+    {{ content|truncate(300) }}
+    ```
+    ---
+    {% endfor %}
+    </file_samples>
+
+{% if formatted_research_insights %}
+3.  **Research Insights:** (Relevant information from external research)
+    <research_insights>
+    {{ formatted_research_insights }}
+    </research_insights>
+{% endif %}
+
+{% if task_description %}
+## Task-Specific Information:
+{{ task_description }}
+{% endif %}
+
+{% if feature_name %}
+## Feature Name to Implement:
+{{ feature_name }}
+{% endif %}
+
+# Your Task
+
+First, thoroughly analyze all the raw project data provided above. Your goal is to infer:
+-   The project's primary purpose and the specific objective of this plan.
+-   The main programming languages, key technologies, and frameworks likely in use or required.
+-   A suitable project archetype (e.g., web app, backend API, library).
+-   Key existing files/modules and the overall project structure.
+-   Common development patterns and best practices relevant to this project.
+-   Natural boundaries for parallel work (e.g., frontend/backend, services, features).
+
+Next, based on your inferences, create a **detailed action plan document structured for parallel execution by a Claude Squad**. This plan will be the central coordination document. It must break down the overall objective into distinct workstreams, each assignable to a different Claude Code instance.
+
+## Required Plan Structure and Content:
+
+Your output must be a Markdown document with the following sections:
+
+1.  **Overall Objective for the Squad:**
+    *   A clear, concise statement of what the entire Claude Squad aims to achieve collaboratively.
+
+2.  **Project Context:**
+    *   A brief summary of the project's purpose, technologies, and architecture.
+    *   Key files, modules, and components relevant to this plan.
+    *   Any constraints or requirements that must be considered.
+
+3.  **Workstream Definitions:** (The core of the document)
+    *   Break down the objective into 2-5 distinct workstreams, each suitable for a different Claude instance.
+    *   For each workstream, include:
+        *   **Workstream ID & Title:** A unique identifier (e.g., "WS1") and descriptive name.
+        *   **Assigned Role:** A clear role title for the Claude instance (e.g., "Frontend Developer", "API Engineer").
+        *   **Objective:** What this workstream aims to accomplish.
+        *   **Files/Components:** The specific parts of the codebase this workstream will focus on.
+        *   **Tasks:**
+            *   Break down the workstream objective into actionable steps for the assigned Claude instance.
+            *   For each task: description, specific instructions, expected outcome, verification/testing steps.
+            *   `- [ ]` A Markdown checklist item for each task.
+        *   **Dependencies on Other Workstreams:** Clearly list any tasks from *other* workstreams that must be completed before this workstream (or specific tasks within it) can start or finish. (e.g., "Depends on: Workstream B - Task 3 completion. Signal: Workstream B will update this plan when `UserAuthToken` is ready.")
+        *   **Outputs/Deliverables for Other Workstreams:** List what this workstream will produce that other workstreams will consume. (e.g., "Delivers: `UserAuthToken` data structure to Workstream C")
+
+4.  **Integration Points & Strategy:**
+    *   Describe how the outputs of different parallel workstreams will be integrated.
+    *   Identify key integration milestones or checkpoints.
+    *   `- [ ]` Checklist items for integration tasks.
+
+5.  **Overall Testing & QA Strategy for the Squad:**
+    *   How will the integrated solution be tested?
+    *   Responsibilities for different types of testing (e.g., one instance focuses on integration tests after components are delivered).
+    *   `- [ ]` Checklist items for overall QA.
+
+6.  **Coordination & Communication Guidelines (Brief):**
+    *   Remind users that Claude instances should refer to `CLAUDE.md` for project-wide standards.
+    *   Suggest that instances update their progress in this shared plan document (by checking off tasks). Instances should clearly signal task completion or readiness for handoff to dependent workstreams.
+    *   Mention that this plan is the source of truth for task assignments and dependencies. A user can direct an instance by saying, "You are the [Assigned Role], please perform your tasks in [Workstream Title/ID] as outlined in this plan."
+
+## Important Guidelines for Squad Plan Generation:
+
+*   **Parallelism is Key:** Structure the plan to maximize concurrent work.
+*   **Clear Dependencies:** Make dependencies between workstreams explicit and easy to understand. This is critical for ordering work.
+*   **Well-Defined Interfaces:** Specify how components developed in parallel will interact.
+*   **Actionable Tasks within Workstreams:** Each task within a workstream should be clear and executable by a single Claude instance.
+*   **Assignability:** The plan should be written so a human can easily say, "Claude Instance Alpha, you are the 'Backend API Developer'. Please execute Workstream B from the plan."
+*   **Reference `CLAUDE.md`:** Instruct that all instances must adhere to the project's `CLAUDE.md`.
+
+The final output should be ONLY the Markdown content of this detailed, squad-focused action plan.

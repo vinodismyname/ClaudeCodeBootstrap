@@ -1,0 +1,10 @@
+{
+  "theme": "dark",
+  "allowedTools": ["Read", "LS", "Grep"],
+  "autoApproveTools": ["Read", "LS", "Grep"],
+  "defaultAllowedBranches": ["main"],
+  "showPrompt": false,
+  "telemetry": {
+    "disabled": false
+  }
+}

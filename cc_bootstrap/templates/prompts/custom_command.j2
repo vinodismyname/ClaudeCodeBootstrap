@@ -1,0 +1,77 @@
+You are an expert AI assistant tasked with generating the **direct content** for a Claude Code custom command Markdown file.
+The entire output you generate will be saved as `.claude/commands/{{ command_category }}/{{ command_name }}.md` and will be used by Claude Code as a prompt when the user types `/{{ command_category }}:{{ command_name }}`.
+
+<input_context>
+  <command_details>
+    <category>{{ command_category }}{% if category_description %} - {{ category_description }}{% endif %}</category>
+    <name>{{ command_name }}</name>
+    <description_goal>{% if command_description %}{{ command_description }}{% else %}Perform a task related to {{ command_category }}.{% endif %}</description_goal>
+  </command_details>
+
+  <raw_project_data>
+    <user_plan>
+      {{ user_plan_content }}
+    </user_plan>
+
+    <project_file_samples>
+      {% for path, content in project_file_samples.items() %}
+      <file path="{{ path }}">
+        ```
+        {{ content|truncate(300) }}
+        ```
+      </file>
+      {% endfor %}
+    </project_file_samples>
+  </raw_project_data>
+
+  {% if mcp_tools and mcp_tools|length > 0 %}
+  <available_mcp_tools>
+  {% for tool in mcp_tools %}
+    <tool>
+      <name>{{ tool.name }}</name>
+      {% if tool.usage_notes %}<usage_notes>{{ tool.usage_notes }}</usage_notes>{% endif %}
+    </tool>
+  {% endfor %}
+  </available_mcp_tools>
+  {% endif %}
+</input_context>
+
+<task_instructions>
+Your task is to create the **exact Markdown content** for the custom command `/{{ command_category }}:{{ command_name }}`.
+This content will be the prompt given to Claude Code.
+
+First, analyze the raw project data provided above to infer:
+- The project's primary purpose and goals
+- The main programming languages and key technologies/frameworks likely in use
+- A suitable project archetype or category (e.g., web application, backend API, data science project, etc.)
+- Key files and overall project structure
+
+Then, based on your inferences, generate a prompt that:
+1.  Clearly instructs Claude Code on the actions to perform to achieve the goal: "{{ command_description_goal }}". The instructions should be action-oriented and specify the desired outcome.
+2.  Is tailored for the inferred project type, focusing on `{{ command_category }}` functionality.
+3.  Effectively uses the `$ARGUMENTS` placeholder if the command needs to accept parameters from the user. Explain in the prompt how `$ARGUMENTS` will be interpreted (e.g., "The file path provided as $ARGUMENTS will be...").
+4.  Guides Claude Code to refer to the project's `CLAUDE.md` for project-specific standards, conventions, or context.
+5.  If `available_mcp_tools` are provided, consider instructing Claude Code to use them if they are relevant to the command's goal. For example: "Use the '{{ mcp_tools[0].name if mcp_tools else 'example_mcp_tool' }}' tool to..."
+6.  The output MUST be ONLY the Markdown content of the prompt itself. Do NOT include any extra explanations, titles, or sections like "Description", "Usage", "Examples", or "Behavior" unless they are part of the prompt text you want Claude Code to see.
+
+Think about what instructions you would give directly to Claude Code in its terminal to make it perform the desired action. That is what you need to generate.
+</task_instructions>
+
+<example_good_output_format>
+Here's an example of what the content for a custom command `.md` file might look like for a command `/project:git:commit-semantic "feat: Implement user login"`:
+
+```markdown
+Based on the current staged changes, please create a Git commit.
+The commit message should follow the Conventional Commits specification.
+The type of commit should be based on the nature of the changes, and the scope can be inferred if possible.
+The subject of the commit message should be: "$ARGUMENTS"
+
+If there are no staged changes, please stage all current modifications in tracked files before committing.
+After creating the commit, confirm its success.
+Refer to our project's CLAUDE.md for any specific commit message guidelines.
+```
+
+(End of example. Your output should be similar in that it's *just the prompt text*.)
+</example_good_output_format>
+
+Now, generate the Markdown content for the `/{{ command_category }}:{{ command_name }}` custom command.

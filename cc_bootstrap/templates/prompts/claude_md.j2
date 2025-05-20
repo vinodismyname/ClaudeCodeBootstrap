@@ -1,0 +1,113 @@
+You are an expert software architect tasked with creating a concise yet comprehensive CLAUDE.md file for a software project. This file will serve as foundational context for Claude Code to effectively assist with development. Balance completeness with token efficiency, as this file is loaded with each Claude Code session.
+
+# Raw Project Data
+
+You will be provided with:
+1. The user's project plan
+2. A sample of files from the project directory
+
+## User's Project Plan:
+<plan_data>
+{{ user_plan_content }}
+</plan_data>
+
+## Project File Samples:
+<file_samples>
+{% for path, content in project_file_samples.items() %}
+File: {{ path }}
+Content:
+```
+{{ content|truncate(500) }}
+```
+---
+{% endfor %}
+</file_samples>
+
+# Your Task
+
+First, analyze the raw project data provided above to infer:
+- The project's primary purpose and goals
+- The main programming languages and key technologies/frameworks likely in use
+- A suitable project archetype or category (e.g., web application, backend API, data science project, etc.)
+- Key files and overall project structure
+- Common commands that might be relevant for this project
+
+Then, based on your inferences, create a CLAUDE.md file that is:
+1. **Concise and token-efficient** - Prioritize essential information over exhaustive details
+2. **Well-structured with clear hierarchy** - Use Markdown headings (h1, h2, h3) to organize information
+3. **Focused on project-specific guidance** - Include only what Claude Code needs to know about this particular project
+
+Include the following sections, adapting them to the specific project type:
+
+## 1. Project Overview
+A brief description of the project's purpose, goals, and main features. Include a tech stack summary and high-level architecture.
+
+## 2. Development Environment Setup
+Concise instructions for setting up the development environment, focusing on essential commands and prerequisites.
+
+## 3. Project Structure
+An explanation of the most important directories and files, focusing on entry points, core modules, and configuration files. Use bullet points for clarity.
+
+## 4. Common Commands
+A reference list of the most frequently needed commands for development, testing, building, and deployment. Format as a table or bullet list for quick reference.
+
+## 5. Coding Standards
+Focus on project-specific conventions that Claude Code must follow. Skip generic language standards in favor of team-specific practices.
+
+## 6. Git Workflow
+Brief description of branching strategy, commit message format, and PR/review process. Only include what Claude Code needs to follow team practices.
+
+## 7. Explore-Plan-Act TDD Workflow
+Create a section that explicitly outlines the preferred workflow pattern:
+
+- **Explore Phase**: Instructions for systematically investigating relevant parts of the codebase before making changes. Include guidance on which tools to use (e.g., `Grep`, `Read`, `LS`) and how to analyze dependencies.
+
+- **Plan Phase**: Guidelines for designing solutions, with emphasis on planning tests before implementation. Include guidance on writing failing tests first, documenting assumptions, and considering edge cases.
+
+- **Act Phase**: Instructions for implementing the solution through Test-Driven Development:
+  1. Write failing tests first
+  2. Implement minimum code to make tests pass
+  3. Refactor while keeping tests green
+  4. Repeat for each component or feature
+
+Include language-specific testing guidance and preferred test frameworks based on the detected technologies.
+
+## 8. Critical Guidelines for Claude
+This section is vital - include specific directives on Claude Code's behavior:
+
+- NEVER create mock data or simplified components unless explicitly told to do so
+- When asked to refactor, prioritize clarity and maintainability over cleverness
+- Always add comprehensive unit tests for new functionality, following the project's testing patterns
+- If unsure about a requirement, ask for clarification before proceeding
+- Before committing, ensure all tests pass and linting errors are resolved
+- DO NOT invent new utility functions if a suitable one likely exists in `/src/utils`. Check there first
+- [Add 2-3 additional project-specific directives based on your analysis]
+
+Use clear imperative language with words like "ALWAYS", "NEVER", and "DO NOT" for critical directives. Format these as a bulleted list for clarity.
+
+{% if use_claude_squad %}
+## 9. Claude Squad Guidelines
+Include specific guidance for parallel task execution and coordination between Claude instances. Explain:
+- How work should be divided (by feature, layer, or function)
+- How Git worktrees should be used for isolation
+- Communication mechanisms between instances
+- Integration points and coordination approach
+- How to apply the Explore-Plan-Act TDD workflow in a multi-instance context
+Reference that detailed workstream breakdowns can be found in ACTION_PLAN.md.
+{% endif %}
+
+{% if formatted_research_insights %}
+Use the following research insights to enhance your understanding and recommendations:
+<research_summary>
+{{ formatted_research_insights }}
+</research_summary>
+{% endif %}
+
+# Important Formatting Guidelines
+
+- Use a clean, hierarchical structure with clear headings (h1 for main sections, h2 for subsections)
+- When referring to files or directories, use code formatting (`like_this`)
+- Ruthlessly prioritize information - include only what's truly necessary
+- For documentation links or visual references, provide clear paths or URLs in a "Resources" section
+- If linking to visual diagrams or architecture images, indicate their location: "See architecture diagram at docs/architecture.png"
+- For behavior directives in section 8, use bold formatting for keywords like **ALWAYS**, **NEVER**, and **DO NOT**
