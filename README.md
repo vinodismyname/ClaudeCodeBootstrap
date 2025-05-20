@@ -1,284 +1,275 @@
 ![Banner](assets/banner.png)
-# **cc-bootstrap**: *Claude Code Project Bootstrapper*
 
-[![PyPI version](https://img.shields.io/pypi/v/cc-bootstrap.svg)](https://pypi.org/project/cc-bootstrap/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/cc-bootstrap.svg)](https://pypi.org/project/cc-bootstrap/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+# cc-bootstrap: Claude Code Project Bootstrapper
+[![PyPI version](https://img.shields.io/pypi/v/cc-bootstrap.svg)](https://pypi.org/project/ClaudeCodeBootstrap/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/cc-bootstrap.svg)](https://pypi.org/project/ClaudeCodeBootstrap/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/vinodismyname/ClaudeCodeBootstrap/ci.yml?branch=main&label=build)](https://github.com/vinodismyname/cc-bootstrap/actions)
 
-`cc-bootstrap` is a Python command-line tool designed to automate and accelerate the setup of [Anthropic's Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), an agentic coding assistant that operates in your terminal. It intelligently generates essential configuration files for Claude Code by leveraging Large Language Models (LLMs) to analyze user-provided project plans and, optionally, existing project structures.
+`cc-bootstrap` is a Python command-line tool that automates the setup of configuration files for [Anthropic's Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), an agentic AI coding assistant that runs in your terminal. This tool leverages Large Language Models (LLMs) to analyze user-provided project plans and existing codebase snippets, generating tailored configuration files to help you get the most out of Claude Code quickly.
 
-The idea behind `cc-bootstrap` is an **LLM-led inference approach**. You provide a high-level project plan and point the tool to your project directory. `cc-bootstrap` then uses an LLM (such as Claude Sonnet via Anthropic API or AWS Bedrock) to:
-1.  Analyze your project plan and sample project files.
-2.  Infer key characteristics like project purpose, technology stack, architecture, and common development patterns.
-3.  Generate tailored configuration files specifically for Claude Code, imbuing it with relevant context from the start.
-
-This significantly speeds up the onboarding process for Claude Code, ensuring it has a solid foundation of understanding about your project, leading to more effective and context-aware assistance.
+By providing initial context and generating foundational assets, `cc-bootstrap` accelerates the adoption of Claude Code and helps establish best practices for its use in your projects.
 
 ## Table of Contents
 
-- [Features](#features)
+- [Key Features](#key-features)
+- [What `cc-bootstrap` Generates](#what-cc-bootstrap-generates)
 - [Installation](#installation)
-- [Usage](#usage)
-  - [Command Structure](#command-structure)
-  - [Core Arguments](#core-arguments)
-  - [Interactive Mode](#interactive-mode)
-  - [Key CLI Options (Bootstrap Command)](#key-cli-options-bootstrap-command)
-  - [Global Options](#global-options)
 - [Configuration](#configuration)
-  - [Environment Variables](#environment-variables)
-  - [The Project Plan File](#the-project-plan-file)
-  - [Generated Files Overview](#generated-files-overview)
-  - [Configuring MCP Tools](#configuring-mcp-tools)
+- [Usage](#usage)
+  - [CLI Options](#cli-options)
+  - [Interactive Mode](#interactive-mode)
+- [Workflow Overview](#workflow-overview)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Features
+## Key Features
 
-✨ **Automated Configuration Generation**: Creates a comprehensive set of starting configuration files for Claude Code, including:
-*   `CLAUDE.md`: For persistent project context, coding standards, and operational guidance.
-*   `ACTION_PLAN.md`: A detailed, actionable plan for project implementation, adaptable for single Claude instances or [Claude Squads](https://docs.anthropic.com/en/docs/claude-code/tutorials/claude-squad).
-*   `.claude/commands/`: A suite of categorized custom Markdown commands to automate common development tasks within Claude Code.
-*   `.mcp.json`: Configuration for Model Context Protocol (MCP) servers, enabling Claude Code to interact with external tools and services. `cc-bootstrap` suggests relevant tools based on your project.
-*   `.claude/settings.json`: Claude Code settings, including dynamically generated permissions for the configured MCP tools.
+*   **LLM-Driven Configuration:** Utilizes LLMs (Anthropic API, AWS Bedrock) to generate context-aware configurations.
+*   **Comprehensive Asset Creation:** Generates all essential files for Claude Code:
+    *   `CLAUDE.md` (project context)
+    *   Custom Commands (in `.claude/commands/`)
+    *   `.mcp.json` (Model Context Protocol server configurations)
+    *   `.claude/settings.json` (Claude Code settings)
+    *   `ACTION_PLAN.md` (structured task plans)
+*   **Multi-Provider Support:** Works with LLMs from Anthropic (via direct API) and AWS Bedrock.
+*   **Project Analysis:** Can sample files from your existing project to build richer context for the LLM.
+*   **Research Integration:** Optionally uses Perplexity API to fetch external information and enhance generated content.
+*   **Claude Squad Ready:** Generates `ACTION_PLAN.md` suitable for both single-instance and multi-instance (Claude Squad) workflows.
+*   **User-Friendly CLI:** Modern command-line interface built with Typer, featuring:
+    *   An interactive mode (`-i` or `--interactive`) for guided setup.
+    *   A dry-run mode (`--dry-run`) to preview changes.
+    *   Options to force overwrite existing files or skip specific asset generation.
+*   **Customizable:** Extensive CLI options and environment variable support for fine-tuning behavior.
 
-🧠 **LLM-Powered Analysis**: Utilizes powerful LLMs (Anthropic API, AWS Bedrock) to understand your project's nuances from a plan file and code samples.
+## What `cc-bootstrap` Generates
 
-🤖 **Interactive Mode**: Offers a user-friendly, guided CLI experience (`-i`) for easy configuration of generation parameters.
+`cc-bootstrap` creates the following files in your project directory, tailored to your project's needs:
 
-☁️ **Multiple LLM Provider Support**:
-*   Anthropic API (default model: `claude-3-7-sonnet-20250219`)
-*   AWS Bedrock (default model: `us.anthropic.claude-3-7-sonnet-20250219-v1:0`)
-
-🔍 **External Research Integration**: Optionally leverages the Perplexity API (`--use-perplexity`) to:
-1.  Generate research questions based on your project plan.
-2.  Query Perplexity for insights.
-3.  Incorporate these findings into the generated assets (e.g., `CLAUDE.md`, `ACTION_PLAN.md`).
-
-🤝 **Claude Squad Compatibility**: Can generate an `ACTION_PLAN.md` specifically structured for parallel development using Claude Squads (`--use-claude-squad`).
-
-🤔 **Extended LLM Reasoning**: Supports enabling an LLM's "thinking" mode with a configurable token budget (`--enable-thinking`, `--thinking-budget`) for more sophisticated and nuanced content generation.
-
-🛠️ **Customizable Output**:
-*   `--force-overwrite`: Overwrite existing Claude Code configuration files.
-*   `--skip-commands`, `--skip-mcp-config`: Selectively skip generating certain assets.
-*   `--dry-run`: Preview intended actions and generated content without writing any files.
-
-🔧 **MCP Tool Integration**: Allows specification of MCP tools to integrate via a comma-separated list or a JSON/YAML configuration file (`--mcp-tools-config`).
-
-💻 **Modern CLI**: Built with Typer for a robust command-line interface and Rich for enhanced, user-friendly output and progress indicators.
-
-📜 **Open Source**: Distributed under the MIT License.
+*   **`CLAUDE.md`**: A Markdown file providing persistent, project-specific context to Claude Code. It includes project overview, tech stack, common commands, coding standards, and critical guidelines for Claude.
+*   **`.claude/commands/`**: A directory containing custom slash commands (as `.md` files) for Claude Code. These commands automate common development tasks like code reviews, test generation, Git operations, and more.
+*   **`.mcp.json`**: Configures Model Context Protocol (MCP) servers, allowing Claude Code to interact with external tools, APIs, and data sources (e.g., web search, databases).
+*   **`.claude/settings.json`**: Sets default user preferences for Claude Code, including theme, telemetry, and crucially, `allowedTools` which can include permissions for the MCP tools defined in `.mcp.json`.
+*   **`ACTION_PLAN.md`**: A structured Markdown document outlining a step-by-step plan for Claude Code to execute complex features or tasks. Supports generation for both single Claude instances and parallel "Claude Squad" workflows.
 
 ## Installation
 
 ### Prerequisites
 
-*   Python 3.11 or higher.
+*   Python 3.12 or higher.
+*   `pip` or `uv`
 
-### Virtual Environment (Recommended)
+### Steps
 
-It's highly recommended to install `cc-bootstrap` within a Python virtual environment to avoid conflicts with other projects or system-wide packages.
-
-1.  Create a virtual environment (e.g., named `.venv`):
+1.  **Install `cc-bootstrap`:**
+    The tool will be available on PyPI.
     ```bash
-    python3 -m venv .venv
+    pip install cc-bootstrap
+    ```
+    or
+    ```
+    uvx cc-bootstrap
+
     ```
 
-2.  Activate the virtual environment:
-    *   On macOS and Linux:
-        ```bash
-        source .venv/bin/activate
-        ```
-    *   On Windows:
-        ```bash
-        .venv\Scripts\activate
-        ```
 
-### Installing `cc-bootstrap`
+## Configuration
 
-Install `cc-bootstrap` using pip:
+`cc-bootstrap` requires API keys for the LLM providers and optionally for Perplexity. These can be configured via environment variables or CLI options.
 
-```bash
-pip install cc-bootstrap
-```
+### Environment Variables
 
-### Post-Installation: API Keys
+*   **Anthropic API:**
+    *   `ANTHROPIC_API_KEY`: Your Anthropic API key.
+*   **AWS Bedrock:**
+    *   `AWS_ACCESS_KEY_ID`: Your AWS Access Key ID.
+    *   `AWS_SECRET_ACCESS_KEY`: Your AWS Secret Access Key.
+    *   `AWS_SESSION_TOKEN` (Optional): Your AWS Session Token.
+    *   `AWS_REGION`: The AWS region for Bedrock (e.g., `us-west-2`).
+    *   `AWS_PROFILE` (Optional): The AWS CLI profile to use.
+*   **Perplexity API (Optional):**
+    *   `PERPLEXITY_API_KEY`: Your Perplexity API key.
 
-`cc-bootstrap` requires API keys for the LLM providers and optional research tools you intend to use. These are typically configured via environment variables. See the [Environment Variables](#environment-variables) section for details.
+CLI options (see [Usage](#usage)) will override environment variables if both are provided.
 
 ## Usage
 
-### Command Structure
-
-The primary command for `cc-bootstrap` is `bootstrap`:
+The primary command is `cc-bootstrap bootstrap`.
 
 ```bash
 cc-bootstrap bootstrap [OPTIONS]
 ```
 
-### Core Arguments
+You can also run the tool in interactive mode:
 
-*   `-p, --project-path DIRECTORY`: Path to the target project folder where Claude Code configurations will be generated. (Required unless in interactive mode).
-*   `--project-plan-file FILE`: Path to your project specification or plan file (typically Markdown). This file is crucial for the LLM to understand your project. (Required unless in interactive mode).
+```bash
+cc-bootstrap --interactive
+# or
+cc-bootstrap bootstrap --interactive # or -i
+```
+
+### CLI Options
+
+The `bootstrap` command accepts the following options:
+
+*   `--project-path PATH` / `-p PATH`: Path to the target project folder. (Required in non-interactive mode)
+*   `--project-plan-file PATH`: Path to the user's project specification/plan file (e.g., `plan.md`). (Required in non-interactive mode)
+*   `--mcp-tools-config TEXT`: Path to a JSON/YAML file defining MCP tools, or a comma-separated string of tool names (e.g., `web_search,github`).
+*   `--use-claude-squad / --no-use-claude-squad`: Enable Claude Squad guidance for `ACTION_PLAN.md`. (Default: no)
+*   `--use-perplexity / --no-use-perplexity`: Use Perplexity API for research. (Default: no)
+*   `--perplexity-api-key TEXT`: Perplexity API key. Overrides `PERPLEXITY_API_KEY` env var.
+*   `--llm-provider [anthropic|bedrock]`: LLM provider to use. (Default: `anthropic`)
+*   `--llm-model TEXT`: Specific LLM model ID. If not set, uses the provider's default (e.g., `claude-3-7-sonnet-20250219` for Anthropic, `us.anthropic.claude-3-7-sonnet-20250219-v1:0` for Bedrock).
+*   `--api-key TEXT`: Anthropic API key. Overrides `ANTHROPIC_API_KEY` env var.
+*   `--aws-region TEXT`: AWS region for Bedrock. Overrides `AWS_REGION` env var.
+*   `--aws-profile TEXT`: AWS profile for Bedrock. Overrides `AWS_PROFILE` env var.
+*   `--enable-thinking / --disable-thinking`: Enable/disable extended LLM thinking/reasoning capabilities (if supported by the model/provider). (Default: enabled, provider-dependent)
+*   `--thinking-budget INTEGER`: Token budget for LLM thinking. (Default: 6000, provider-dependent)
+*   `--force-overwrite / --no-force-overwrite`: Overwrite existing configuration files. (Default: no)
+*   `--skip-commands / --generate-commands`: Skip custom commands generation. (Default: generate)
+*   `--skip-mcp-config / --generate-mcp-config`: Skip MCP config (`.mcp.json`) generation. (Default: generate)
+*   `--dry-run / --execute-run`: Simulate run without writing any files. (Default: execute)
+*   `--verbose` / `-v`: Increase output verbosity for debugging.
+*   `--interactive` / `-i`: Run in interactive mode, prompting for configuration values.
+*   `--version` / `-V`: Show version and exit.
+*   `--help`: Show help message and exit.
+
+The global `cc-bootstrap` command also accepts `--interactive` (`-i`), `--verbose` (`-v`), and `--version` (`-V`).
 
 ### Interactive Mode
 
-For a guided experience, you can run `cc-bootstrap` in interactive mode. It will prompt you for all necessary information and options.
+Running `cc-bootstrap --interactive` or `cc-bootstrap bootstrap -i` will guide you through the configuration options with prompts. This is recommended for first-time users or when you want to explore different settings. You can choose between "Quick Setup" (uses sensible defaults and CLI overrides) and "Advanced Setup" (prompts for all options).
 
-```bash
-cc-bootstrap -i
-# or
-cc-bootstrap bootstrap -i
+## Workflow Overview
+
+```mermaid
+graph TD
+    A[CLI Input] --> B[Parse & Validate]
+    B --> C[Build Context]
+    
+    C --> D{Research?}
+    D -- Yes --> E[Perplexity API]
+    D -- No --> F
+    E --> F[Context Ready]
+    
+    F --> G[Generate Assets]
+    
+    subgraph "Asset Generation"
+        G --> G1[CLAUDE.md]
+        G --> G2{Custom Commands?}
+        G2 -- Yes --> G3[.claude/commands/]
+        G2 -- No --> G4
+        G3 --> G4{MCP Config?}
+        G4 -- Yes --> G5[.mcp.json]
+        G4 -- No --> G6
+        G5 --> G6[settings.json]
+        G6 --> G7[ACTION_PLAN.md]
+    end
+    
+    G7 --> H[Complete]
+    
+    style A fill:#f9f,stroke:#333
+    style H fill:#f9f,stroke:#333
+    style C fill:#ececff
+    style E fill:#ececff
+    style F fill:#e6ffe6
+    style G1 fill:#d0f0fd
+    style G3 fill:#d0f0fd
+    style G5 fill:#d0f0fd
+    style G7 fill:#d0f0fd
+    style G6 fill:#d0f0fd
 ```
 
-If you run `cc-bootstrap -i` without specifying the `bootstrap` command, it will automatically invoke `bootstrap` in interactive mode.
+`cc-bootstrap` follows these general steps:
 
-### Key CLI Options (Bootstrap Command)
+1.  **Initialization & Input:** Parses CLI arguments (or uses interactive prompts) and sets up logging. Key inputs are the project path and the project plan file.
+2.  **Validation:** Checks the existence and accessibility of the project path and plan file. It can offer to create them if they are missing (especially in interactive mode).
+3.  **Build Project Context:**
+    *   Reads the content of the user-provided project plan file.
+    *   Analyzes the specified project directory (`--project-path`) to understand its structure.
+    *   Samples key files (e.g., `README.md`, `package.json`, source files) from the project to provide the LLM with concrete examples of existing code and conventions.
+4.  **(Optional) Research with Perplexity API:**
+    *   If `--use-perplexity` is enabled and an API key is provided:
+        *   An LLM generates targeted research questions based on the project plan and file samples.
+        *   These questions are sent to the Perplexity API to gather external knowledge (e.g., best practices for specific technologies, common pitfalls).
+        *   The research insights are formatted and added to the context for subsequent generation steps.
+5.  **Generate `CLAUDE.md`:** An LLM uses the aggregated context (project plan, file samples, and optional research insights) to create a comprehensive `CLAUDE.md` file. This file serves as the primary guidance document for Claude Code within the project.
+6.  **(Conditional) Generate Custom Commands:** If not skipped (`--skip-commands` is false), an LLM generates a set of `.md` files in the `.claude/commands/` directory. These files define custom slash commands for Claude Code, tailored to common development tasks relevant to the project type.
+7.  **(Conditional) Generate `.mcp.json` (MCP Configuration):** If not skipped (`--skip-mcp-config` is false), an LLM suggests and configures MCP (Model Context Protocol) servers based on the project context and any user-specified tools (from `--mcp-tools-config`). The output is saved to `.mcp.json`.
+8.  **Generate `.claude/settings.json`:** A default `settings.json` file is created (or an existing one is used as a base if not overwriting). It's then updated to include `allowedTools` permissions for any MCP tools configured in the newly generated `.mcp.json`.
+9.  **Generate `ACTION_PLAN.md`:** An LLM creates a detailed `ACTION_PLAN.md`. If `--use-claude-squad` is enabled, the plan is structured to facilitate parallel work by multiple Claude instances. Otherwise, a plan for a single instance is generated.
+10. **Output Summary:** Displays a summary of the generated assets and their status (e.g., created, skipped, error).
 
-Here are some ofika the key options available for the `bootstrap` command:
+Throughout this process, `cc-bootstrap` uses Jinja2 templates to construct prompts for the LLM, ensuring consistent and effective interaction.
 
-*   **LLM Configuration**:
-    *   `--llm-provider TEXT`: LLM provider to use (e.g., `anthropic`, `bedrock`). Default: `anthropic`.
-    *   `--llm-model TEXT`: Specific LLM model ID to use. If not set, uses the provider's default.
-    *   `--api-key TEXT`: Anthropic API key. Can also be set via `ANTHROPIC_API_KEY` environment variable.
-    *   `--aws-region TEXT`: AWS region for Bedrock. Can also be set via `AWS_REGION` environment variable or AWS configuration.
-    *   `--aws-profile TEXT`: AWS profile for Bedrock. Can also be set via `AWS_PROFILE` environment variable or AWS configuration.
+## Examples
 
-*   **Feature Flags**:
-    *   `--use-claude-squad / --no-use-claude-squad`: If set, generated assets (especially `ACTION_PLAN.md`) will include guidance for Claude Squad. Default: `no-use-claude-squad`.
-    *   `--use-perplexity / --no-use-perplexity`: Use Perplexity API for research. Requires API key. Default: `no-use-perplexity`.
-    *   `--perplexity-api-key TEXT`: Perplexity API key. Can also be set via `PERPLEXITY_API_KEY` environment variable.
+1.  **Basic Bootstrap (Anthropic, interactive):**
+    ```bash
+    cc-bootstrap --interactive
+    ```
+    Follow the prompts. Ensure `ANTHROPIC_API_KEY` is set or provide it when prompted.
 
-*   **LLM Behavior**:
-    *   `--enable-thinking / --disable-thinking`: Enable/disable extended thinking/reasoning for the LLM. Default: enabled (provider-specific).
-    *   `--thinking-budget INTEGER`: Token budget for LLM thinking (if enabled). Default: `6000` (provider-specific).
+2.  **Bootstrap for an existing project (AWS Bedrock):**
+    ```bash
+    export AWS_REGION="us-east-1"
+    # Ensure AWS credentials (keys/profile) are configured
 
-*   **Output Control**:
-    *   `--force-overwrite / --no-force-overwrite`: If set, existing Claude Code configuration files will be overwritten. Default: no overwrite.
-    *   `--skip-commands / --generate-commands`: Skip generating custom commands. Default: generate commands.
-    *   `--skip-mcp-config / --generate-mcp-config`: Skip generating MCP configuration. Default: generate MCP config.
-    *   `--dry-run / --execute-run`: If set, prints intended actions and generated content without writing files. Default: execute run.
+    cc-bootstrap bootstrap \
+        --project-path ./my-existing-node-project \
+        --project-plan-file ./docs/project_spec.md \
+        --llm-provider bedrock \
+        --llm-model anthropic.claude-3-haiku-20240307-v1:0 \
+        --mcp-tools-config "web_search,github"
+    ```
 
-*   **MCP Tools**:
-    *   `--mcp-tools-config TEXT`: Path to a JSON/YAML file defining MCP tools to integrate, or a comma-separated string of tool names (e.g., `web_search,github`). If empty, LLM will suggest default tools.
+3.  **Dry run with Perplexity research and Claude Squad plan:**
+    ```bash
+    cc-bootstrap bootstrap \
+        -p ./my-python-api \
+        --project-plan-file ./README.md \
+        --use-perplexity \
+        --perplexity-api-key "YOUR_PPLX_KEY" \
+        --use-claude-squad \
+        --skip-commands \
+        --dry-run \
+        -v
+    ```
 
-*   **Other**:
-    *   `-v, --verbose`: Increase output verbosity for more detailed logging.
-    *   `-i, --interactive`: Run bootstrap in interactive mode (overrides global interactive flag if set).
+4.  **Using a specific Anthropic model and forcing overwrite:**
+    ```bash
+    cc-bootstrap bootstrap \
+        -p ./my-new-project \
+        --project-plan-file ./plan.txt \
+        --llm-provider anthropic \
+        --llm-model claude-3-5-sonnet-20241022 \
+        --api-key "sk-ant-..." \
+        --force-overwrite
+    ```
 
-### Global Options
+## Troubleshooting
 
-These options can be used with `cc-bootstrap` before specifying a command:
+*   **API Key Errors:**
+    *   Ensure the correct environment variables (`ANTHROPIC_API_KEY`, AWS credentials, `PERPLEXITY_API_KEY`) are set and valid.
+    *   Alternatively, pass keys directly via CLI options (e.g., `--api-key`).
+    *   Check for typos or restrictions on your API key.
+*   **Permission Denied:**
+    *   Ensure `cc-bootstrap` has write permissions for the project directory and its subdirectories.
+    *   If creating new files/directories, check parent directory permissions.
+*   **LLM Provider Errors:**
+    *   Verify the model ID is correct for the selected provider.
+    *   Check the provider's status page for outages.
+    *   Rate limits might be encountered; try again later or check your provider plan.
+*   **File Not Found (Project Plan):**
+    *   Ensure the path provided via `--project-plan-file` is correct. The tool can create an empty one if it doesn't exist and you confirm in interactive mode.
+*   **Python Version:**
+    *   `cc-bootstrap` requires Python 3.12+. Check your version with `python3 --version`.
+*   **Dependencies:**
+    *   If you encounter import errors, ensure all dependencies were installed correctly, preferably in a virtual environment.
+*   **Verbose Output:**
+    *   Use the `--verbose` or `-v` flag for more detailed logs, which can help pinpoint issues.
+    *   Example: `cc-bootstrap bootstrap -p . --project-plan-file plan.md -v`
 
-*   `-i, --interactive`: Run in interactive mode globally. If no command is specified, `bootstrap` will be run interactively.
-*   `-v, --verbose`: Increase output verbosity globally.
-*   `--version / -V`: Show `cc-bootstrap` version and exit.
-*   `--help`: Show the main help message and exit. Use `cc-bootstrap bootstrap --help` for command-specific help.
 
-## Configuration
-
-### Environment Variables
-
-`cc-bootstrap` uses environment variables for sensitive information like API keys and cloud configurations:
-
-*   `ANTHROPIC_API_KEY`: Your Anthropic API key. Required if using the `anthropic` LLM provider and not passing via `--api-key`.
-*   `PERPLEXITY_API_KEY`: Your Perplexity API key. Required if using `--use-perplexity` and not passing via `--perplexity-api-key`.
-*   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`: Standard AWS credentials. Used by AWS Bedrock if specific profile/region settings don't resolve credentials.
-*   `AWS_REGION`: Default AWS region for Bedrock. Can be overridden by `--aws-region`.
-*   `AWS_PROFILE`: Default AWS profile for Bedrock. Can be overridden by `--aws-profile`.
-
-It's recommended to use a `.env` file in your project or export these variables in your shell environment. `cc-bootstrap` uses `python-dotenv` to load `.env` files.
-
-### The Project Plan File
-
-The quality and detail of your `--project-plan-file` (e.g., `plan.md`) are **critical** to `cc-bootstrap`'s effectiveness. Due to its "LLM-led inference" approach, the tool relies heavily on this document to understand your project's context, goals, and technical requirements.
-
-**Tips for Writing an Effective Project Plan File:**
-
-1.  **Be Specific About Project Goals and Purpose**:
-    *   Clearly state what the project aims to accomplish.
-    *   Describe the problem it solves or the value it provides.
-2.  **Include Technical Details**:
-    *   Mention programming languages, frameworks, and key libraries.
-    *   Describe the intended architecture or design patterns.
-    *   List any external services, APIs, or databases the project will interact with.
-3.  **Outline Project Structure**:
-    *   Describe major components, modules, or directories.
-    *   Explain how different parts of the system are expected to interact.
-4.  **Specify Development Practices**:
-    *   Note any coding standards, conventions, or style guides.
-    *   Mention testing approaches (e.g., TDD, specific frameworks), CI/CD requirements.
-5.  **Define Key Features**:
-    *   List the main features or user stories you want Claude Code to help with.
-
-**Example Project Plan Structure (Markdown):**
-
-```markdown
-# Project Plan: MyAwesomeApp
-
-## 1. Project Overview
-A web application for tracking personal fitness goals. Users can log workouts, set goals, and view progress.
-The primary goal is to provide an intuitive and motivating platform for fitness enthusiasts.
-
-## 2. Technical Stack
-- **Frontend**: React 18 with TypeScript, Tailwind CSS, Zustand for state management.
-- **Backend**: Node.js with Express.js, PostgreSQL database.
-- **Authentication**: JWT-based authentication, OAuth2 for Google/GitHub login.
-- **Deployment**: Dockerized application, planned deployment on AWS ECS.
-
-## 3. Architecture
-- Single-Page Application (SPA) frontend.
-- RESTful API backend.
-- Modular backend services: User Service, Workout Service, Goal Service.
-- Database schema will include tables for users, workouts, goals, etc.
-
-## 4. Key Features to Implement
-- User registration and login (email/password and OAuth).
-- Workout logging (type, duration, intensity, notes).
-- Goal setting and tracking (e.g., run 5km, workout 3 times a week).
-- Dashboard displaying progress and stats.
-
-## 5. Development Practices
-- **Testing**: Jest and React Testing Library for frontend; Mocha/Chai for backend. Aim for >80% test coverage.
-- **Linting**: ESLint and Prettier with provided configurations.
-- **Version Control**: Git with GitFlow branching model. Commit messages should follow Conventional Commits.
-- **CI/CD**: GitHub Actions for automated testing and deployment.
-
-## 6. External Services & APIs
-- (Potentially) Strava API for workout import.
-- (Potentially) OpenWeatherMap API for weather context during outdoor workouts.
-```
-
-The more detailed and clear your plan, the better `cc-bootstrap` and subsequently Claude Code will understand your project.
-
-### Generated Files Overview
-
-`cc-bootstrap` generates the following files to configure Claude Code for your project:
-
-*   **`CLAUDE.md`** (in project root)
-    *   **Purpose**: Serves as the primary persistent context for Claude Code. It contains project overview, tech stack, key files, common commands, coding standards, and specific instructions for how Claude should behave within this project.
-    *   **Generation**: Content is LLM-generated based on your project plan and file samples, aiming to be concise yet comprehensive.
-
-*   **`ACTION_PLAN.md`** (in project root)
-    *   **Purpose**: Provides a detailed, step-by-step actionable plan for implementing the project or a specific feature outlined in your project plan.
-    *   **Generation**: LLM-generated. If `--use-claude-squad` is enabled, the plan is structured for parallel work by multiple Claude instances.
-
-*   **`.claude/commands/`** (directory in project root)
-    *   **Purpose**: Contains custom commands (as Markdown files) that you can invoke within Claude Code (e.g., `/project:code-review:review-file`). These automate common tasks or complex prompts.
-    *   **Generation**: `cc-bootstrap` generates a set of useful starter commands categorized into subdirectories (e.g., `code-review`, `test-generation`, `git-workflow`). The content of each command is LLM-generated to be relevant to your project.
-
-*   **`.mcp.json`** (in project root)
-    *   **Purpose**: Configures Model Context Protocol (MCP) servers. MCP allows Claude Code to extend its capabilities by interacting with external tools, databases, APIs (e.g., web search, database query, GitHub interaction).
-    *   **Generation**: LLM-generated based on your project plan and any tools specified via `--mcp-tools-config`. It suggests and configures relevant MCP servers.
-
-*   **`.claude/settings.json`** (in project root)
-    *   **Purpose**: Contains settings for Claude Code, such as theme, telemetry, and crucially, `allowedTools`.
-    *   **Generation**: `cc-bootstrap` starts with default settings and dynamically adds permissions to `allowedTools` for any MCP servers configured in `.mcp.json` (e.g., `mcp__web_search__*`).
-
-### Configuring MCP Tools
-
-You can guide `cc-bootstrap` on which MCP tools to consider for your `.mcp.json` file using the `--mcp-tools-config` option. This option accepts:
-*   A comma-separated string of tool names (e.g., `web_search,github,postgres`). `cc-bootstrap` will then ask the LLM to generate configurations for these.
-*   A path to a JSON or YAML file containing more detailed MCP tool definitions. This allows for pre-defining specific
