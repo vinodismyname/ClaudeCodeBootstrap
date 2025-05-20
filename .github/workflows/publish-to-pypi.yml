@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi 
-      url: https://pypi.org/p/ClaudeCodeBootstrap
+      url: https://pypi.org/p/cc-bootstrap 
 
     steps:
       - name: Checkout repository
