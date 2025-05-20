@@ -1,11 +1,9 @@
+![Banner](assets/banner.png)
 # **cc-bootstrap**: *Claude Code Project Bootstrapper*
 
 [![PyPI version](https://img.shields.io/pypi/v/cc-bootstrap.svg)](https://pypi.org/project/cc-bootstrap/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/cc-bootstrap.svg)](https://pypi.org/project/cc-bootstrap/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-<!-- Add build status badge once CI is set up, e.g.,
-[![Build Status](https://img.shields.io/github/actions/workflow/status/yourusername/cc-bootstrap/main.yml?branch=main)](https://github.com/yourusername/cc-bootstrap/actions)
--->
 
 `cc-bootstrap` is a Python command-line tool designed to automate and accelerate the setup of [Anthropic's Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), an agentic coding assistant that operates in your terminal. It intelligently generates essential configuration files for Claude Code by leveraging Large Language Models (LLMs) to analyze user-provided project plans and, optionally, existing project structures.
 
