@@ -33,7 +33,7 @@ jobs:
         run: uv sync --all-extras --dev
   
       - name: Build package
-        run: uv build --no-sources 
+        run: uv build
 
       - name: Publish package to PyPI
         run: uv publish dist/* 
