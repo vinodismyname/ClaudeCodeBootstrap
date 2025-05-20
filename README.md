@@ -1,10 +1,9 @@
 ![Banner](assets/banner.png)
 
 # cc-bootstrap: Claude Code Project Bootstrapper
-[![PyPI version](https://img.shields.io/pypi/v/cc-bootstrap.svg)](https://pypi.org/project/ClaudeCodeBootstrap/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/cc-bootstrap.svg)](https://pypi.org/project/ClaudeCodeBootstrap/)
+[![PyPI version](https://img.shields.io/pypi/v/cc-bootstrap.svg)](https://pypi.org/project/cc-bootstrap/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/cc-bootstrap.svg)](https://pypi.org/project/cc-bootstrap/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/vinodismyname/ClaudeCodeBootstrap/ci.yml?branch=main&label=build)](https://github.com/vinodismyname/cc-bootstrap/actions)
 
 `cc-bootstrap` is a Python command-line tool that automates the setup of configuration files for [Anthropic's Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), an agentic AI coding assistant that runs in your terminal. This tool leverages Large Language Models (LLMs) to analyze user-provided project plans and existing codebase snippets, generating tailored configuration files to help you get the most out of Claude Code quickly.
 
