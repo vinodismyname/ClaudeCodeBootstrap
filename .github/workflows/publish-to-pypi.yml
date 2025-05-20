@@ -21,13 +21,15 @@ jobs:
         with:
           fetch-depth: 0 
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv (official Astral action)
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.12' 
+          version: "0.7.3"
+          enable-cache: true
+          python-version: "3.12"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
+      - name: Set up Python (using uv)
+        run: uv python install
 
       - name: Install all dependencies
         run: uv sync --all-extras --dev
@@ -35,5 +37,5 @@ jobs:
       - name: Build package
         run: uv build
 
-      - name: Publish package to PyPI
-        run: uv publish dist/* 
+      - name: Publish to PyPI (using uv)
+        uses: pypa/gh-action-pypi-publish@release/v1
