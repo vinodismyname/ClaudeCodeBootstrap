@@ -27,7 +27,8 @@ class DynamicWorkflow:
         use_perplexity: bool = False,
         perplexity_api_key: Optional[str] = None,
         use_claude_squad: bool = False,
-        mcp_tools: Optional[List[Dict[str, Any]]] = None,
+        smithery_server_names: Optional[List[str]] = None,
+        smithery_api_key: Optional[str] = None,
     ):
         """
         Initialize the dynamic workflow.
@@ -40,7 +41,8 @@ class DynamicWorkflow:
             use_perplexity: Whether to use Perplexity API for research
             perplexity_api_key: Perplexity API key (required if use_perplexity is True)
             use_claude_squad: Whether to generate Claude Squad assets
-            mcp_tools: List of MCP tool configurations (optional)
+            smithery_server_names: List of Smithery qualified server names (optional)
+            smithery_api_key: Smithery API key (required if smithery_server_names is provided)
         """
         self.logger = logging.getLogger(__name__)
         self.project_path = project_path
@@ -50,8 +52,8 @@ class DynamicWorkflow:
         self.use_perplexity = use_perplexity
         self.perplexity_api_key = perplexity_api_key
         self.use_claude_squad = use_claude_squad
-
-        self.mcp_tools = mcp_tools or []
+        self.smithery_server_names = smithery_server_names or []
+        self.smithery_api_key = smithery_api_key
 
     def get_workflow_steps(self) -> List[str]:
         """
@@ -62,6 +64,9 @@ class DynamicWorkflow:
         """
 
         steps = ["Building project context"]
+
+        if self.smithery_server_names and self.smithery_api_key:
+            steps.append("Fetching MCP server details from Smithery Registry")
 
         if self.use_perplexity and self.perplexity_api_key:
             steps.append("Performing research (Perplexity API)")
@@ -130,9 +135,80 @@ class DynamicWorkflow:
         context_builder = ContextBuilder(self.project_path, self.plan_file)
         context = context_builder.build_context()
         context["use_claude_squad"] = self.use_claude_squad
-        context["user_mcp_tools_input"] = self.mcp_tools
         update_status(step_desc, "Completed")
         current_step_num += 1
+
+        # Fetch Smithery MCP server configurations if provided
+        fetched_smithery_configs = {}
+        if self.smithery_server_names and self.smithery_api_key:
+            step_desc = steps[current_step_num]
+            update_status(step_desc, "Starting")
+            self.logger.info(f"{step_desc} for: {self.smithery_server_names}")
+            try:
+                from cc_bootstrap.smithery_client import (
+                    get_all_mcp_server_configs,
+                    parse_config_schema_for_basic_info,
+                )
+
+                # Get all server configs from Smithery
+                raw_fetched_data = get_all_mcp_server_configs(
+                    self.smithery_server_names, self.smithery_api_key
+                )
+
+                for q_name, server_details in raw_fetched_data.items():
+                    if server_details:
+                        # Check if this was a matched result from a search
+                        if server_details.get("matched_from_query"):
+                            original_query = server_details.get(
+                                "original_query", q_name
+                            )
+                            matched_to = server_details.get("matched_to", "unknown")
+                            self.logger.info(
+                                f"Query '{original_query}' matched to server '{matched_to}'"
+                            )
+
+                        if server_details.get("config_schema") is not None:
+                            # Parse the schema for easier use in prompts
+                            parsed_schema = parse_config_schema_for_basic_info(
+                                server_details["config_schema"]
+                            )
+                            fetched_smithery_configs[q_name] = {
+                                **server_details,  # includes qualified_name, display_name, description, icon_url, config_schema, tools
+                                "parsed_schema_info": parsed_schema,
+                            }
+                            self.logger.info(
+                                f"Successfully fetched and parsed Smithery config for {q_name}"
+                            )
+                        else:
+                            self.logger.warning(
+                                f"No config_schema for Smithery server: {q_name}"
+                            )
+                            fetched_smithery_configs[q_name] = None
+                    else:
+                        self.logger.warning(
+                            f"Failed to fetch Smithery server: {q_name}"
+                        )
+                        fetched_smithery_configs[q_name] = None
+
+                context["fetched_smithery_mcp_configs"] = fetched_smithery_configs
+                update_status(step_desc, "Completed")
+            except ImportError:
+                self.logger.error(
+                    "Smithery client module not found. Skipping Smithery integration."
+                )
+                context["fetched_smithery_mcp_configs"] = {}
+                update_status(step_desc, "Failed (ImportError)")
+            except Exception as e:
+                self.logger.error(f"Error fetching Smithery MCP configs: {e}")
+                context["fetched_smithery_mcp_configs"] = {}  # Ensure key exists
+                update_status(step_desc, f"Failed ({type(e).__name__})")
+            current_step_num += 1
+        else:
+            if self.smithery_server_names and not self.smithery_api_key:
+                self.logger.warning(
+                    "Smithery server names provided, but no API key. Skipping Smithery fetch."
+                )
+            context["fetched_smithery_mcp_configs"] = {}  # Ensure key exists
 
         research_results = None
         if self.use_perplexity and self.perplexity_api_key:

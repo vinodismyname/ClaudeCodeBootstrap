@@ -15,6 +15,7 @@ from rich.panel import Panel
 from cc_bootstrap.config import (
     ENV_ANTHROPIC_API_KEY,
     ENV_PERPLEXITY_API_KEY,
+    ENV_SMITHERY_API_KEY,
     ENV_AWS_REGION,
     ENV_AWS_PROFILE,
     LLM_PROVIDERS,
@@ -247,8 +248,11 @@ def prompt_for_project_config(
         interactive_choices["use_claude_squad"] = get_prompt_default(
             "use_claude_squad", False
         )
-        interactive_choices["mcp_tools_config"] = get_prompt_default(
-            "mcp_tools_config", ""
+        interactive_choices["smithery_mcp_servers"] = get_prompt_default(
+            "smithery_mcp_servers", ""
+        )
+        interactive_choices["smithery_api_key"] = get_prompt_default(
+            "smithery_api_key", os.environ.get(ENV_SMITHERY_API_KEY, "")
         )
         interactive_choices["use_perplexity"] = get_prompt_default(
             "use_perplexity", False
@@ -328,11 +332,11 @@ def prompt_for_project_config(
             f"- [cyan]Claude Squad:[/cyan] {'Enabled' if interactive_choices['use_claude_squad'] else 'Disabled'}"
         )
         mcp_display = (
-            interactive_choices["mcp_tools_config"]
-            if interactive_choices["mcp_tools_config"]
+            interactive_choices["smithery_mcp_servers"]
+            if interactive_choices["smithery_mcp_servers"]
             else "Default tools only"
         )
-        console.print(f"- [cyan]MCP Tools:[/cyan] {mcp_display}")
+        console.print(f"- [cyan]Smithery MCP Servers:[/cyan] {mcp_display}")
         console.print(
             f"- [cyan]Perplexity API:[/cyan] {'Enabled' if interactive_choices['use_perplexity'] else 'Disabled'}"
         )
@@ -367,10 +371,24 @@ def prompt_for_project_config(
             "Generate assets for Claude Squad (parallel work planning)?",
             default=get_prompt_default("use_claude_squad", False),
         )
-        interactive_choices["mcp_tools_config"] = prompt_input(
-            "Enter MCP tools as comma-separated list (e.g., web_search,github) or path to config file (leave empty for LLM suggestions)",
-            default=get_prompt_default("mcp_tools_config", ""),
+        interactive_choices["smithery_mcp_servers"] = prompt_input(
+            "Enter Smithery MCP server names or search terms (comma-separated, e.g., 'owner/repo,exa,search term')",
+            default=get_prompt_default("smithery_mcp_servers", ""),
         )
+        if interactive_choices["smithery_mcp_servers"]:
+            default_smithery_key = get_prompt_default(
+                "smithery_api_key", os.environ.get(ENV_SMITHERY_API_KEY, "")
+            )
+            interactive_choices["smithery_api_key"] = prompt_input(
+                "Enter your Smithery API key (press Enter to use env var if set, needed for Smithery servers)",
+                default=default_smithery_key,
+                password=True,
+                sensitive=True,
+            )
+            if not interactive_choices["smithery_api_key"]:
+                console.print(
+                    "[yellow]Smithery API key not provided. Will not be able to fetch server details from Smithery.[/yellow]"
+                )
         interactive_choices["use_perplexity"] = prompt_yes_no(
             "Use Perplexity API for research?",
             default=get_prompt_default("use_perplexity", False),

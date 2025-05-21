@@ -62,6 +62,12 @@ class DocGenerator:
                 "project_file_samples": self.context.get("project_file_samples", {}),
                 "use_claude_squad": self.context.get("use_claude_squad", False),
                 "research_results": self.context.get("research_results", {}),
+                "fetched_smithery_mcp_configs": self.context.get(
+                    "fetched_smithery_mcp_configs", {}
+                ),
+                "formatted_research_insights": self.context.get(
+                    "formatted_research_insights", ""
+                ),
             }
 
             self.logger.info(f"Generating {CLAUDE_MD_PATH} content...")
@@ -109,8 +115,14 @@ class DocGenerator:
                 "user_plan_content": self.context.get("user_plan_content", ""),
                 "project_file_samples": self.context.get("project_file_samples", {}),
                 "research_results": self.context.get("research_results", {}),
+                "formatted_research_insights": self.context.get(
+                    "formatted_research_insights", ""
+                ),
                 "task_description": self.context.get("task_description", ""),
                 "feature_name": self.context.get("feature_name", ""),
+                "fetched_smithery_mcp_configs": self.context.get(
+                    "fetched_smithery_mcp_configs", {}
+                ),
             }
 
             use_claude_squad = self.context.get("use_claude_squad", False)

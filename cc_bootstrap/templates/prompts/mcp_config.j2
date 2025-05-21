@@ -28,10 +28,23 @@ Content:
 {% if user_mcp_tools_input and user_mcp_tools_input|length > 0 %}
 The user has specified the following MCP tools:
 {% for tool in user_mcp_tools_input %}
-- {{ tool.name }}
+- {{ tool.name }}{% if tool.description %}: {{ tool.description }}{% endif %}
 {% endfor %}
 {% else %}
 The user has not specified any MCP tools.
+{% endif %}
+
+## Existing Smithery-Configured MCP Servers:
+{% if existing_smithery_configs and existing_smithery_configs|length > 0 %}
+The following MCP servers have already been configured from Smithery Registry:
+{% for server_key, config in existing_smithery_configs.items() %}
+- {{ server_key }}: {{ config.description }}
+  {% if config.matched_from_query %}
+  - *Note: This server was matched from the search query "{{ config.original_query }}"*
+  {% endif %}
+{% endfor %}
+{% else %}
+No MCP servers have been configured from Smithery Registry.
 {% endif %}
 
 # Your Task
@@ -48,6 +61,7 @@ Then, based on your inferences and the user-specified tools:
     - For database tools, suggest read-only access if write access is not explicitly required by the project plan.
     - For tools requiring API keys or secrets, ensure these are configured via the `env` field rather than directly in `args`.
     - Prefer tools from trusted sources if multiple options exist.
+4. IMPORTANT: Do NOT generate configurations for servers that are already configured from Smithery Registry (listed in "Existing Smithery-Configured MCP Servers" section). Only generate configurations for tools that need to be added.
 
 Return a JSON object where keys are concise, descriptive server names (e.g., "web_search_main", "project_database_ro") and values are configuration objects.
 Each configuration object should have:

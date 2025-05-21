@@ -22,32 +22,33 @@ Content:
 # Your Task
 
 First, analyze the project information to identify:
-- The project's core purpose, goals, and technical requirements
-- Key technologies, frameworks, and libraries being used
-- Potential knowledge gaps where external research would be valuable
-- Areas where best practices, performance optimizations, or security insights would benefit the project
+- The project's core purpose, goals, and technical requirements.
+- Key technologies, frameworks, and libraries being used or implied by the plan and file samples.
+- Potential knowledge gaps where external research would be most valuable for successful implementation.
+- Areas where best practices, performance optimizations, security insights, or comparative technology analysis would benefit the project.
 
 Then, generate 5-7 targeted research questions that are:
-1. **Specific and focused** - Avoid overly general questions
-2. **Development-oriented** - Should provide actionable insights for implementation
-3. **Prioritized** - Address the most critical information needs first
-4. **Diverse** - Cover different aspects of the project needs
-5. **Structured** - Formulated to elicit concrete, applicable answers
+1. **Specific and focused** - Avoid overly general questions. Each question should target a distinct piece of information.
+2. **Development-oriented** - Should provide actionable insights for design, implementation, or decision-making.
+3. **Prioritized** - Address the most critical information needs first, based on your analysis of the project.
+4. **Diverse** - Cover different aspects of the project needs (e.g., technical implementation, architectural choices, tool comparisons, common pitfalls).
+5. **Clearly Formulated** - Phrased to elicit concrete, applicable answers from an AI research tool.
 
-Focus on these categories of questions:
-- Technical implementation best practices
-- Common pitfalls and their solutions
-- Performance optimization opportunities
-- Integration patterns and compatibility
-- Recent developments or changes in key technologies
+Focus on these categories of questions, tailoring them to the specifics of the project:
+- Technical implementation best practices for the identified technologies.
+- Common pitfalls, challenges, and their solutions related to the project's domain or tech stack.
+- Performance optimization opportunities or strategies.
+- Integration patterns, compatibility issues, or comparisons between relevant tools/libraries.
+- Recent developments, new features, or changes in key technologies that could impact the project.
+- Security considerations specific to the project's architecture or technologies.
 
-Your output MUST be a valid JSON list of strings, with questions ordered by priority. Each question should be formulated to work effectively with an AI research tool like Perplexity.
+Your output MUST be a valid JSON list of strings, with questions ordered by your assessed priority. Each question should be a complete, standalone query.
 
 Example output:
 [
   "What are the current best practices for securing GraphQL endpoints in a Node.js application, particularly for authentication and rate limiting?",
-  "How do React Server Components compare to traditional SSR frameworks like Next.js in terms of performance metrics and development complexity?",
-  "What are the most efficient strategies for implementing real-time synchronization between IndexedDB and a PostgreSQL database?"
+  "How do React Server Components compare to traditional SSR frameworks like Next.js in terms of performance metrics, development complexity, and ecosystem support for a large-scale e-commerce site?",
+  "What are the most efficient strategies for implementing real-time data synchronization between a mobile client using IndexedDB and a backend PostgreSQL database, considering potential network unreliability?"
 ]
 
 
