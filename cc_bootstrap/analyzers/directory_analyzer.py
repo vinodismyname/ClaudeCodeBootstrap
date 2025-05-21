@@ -44,7 +44,6 @@ class DirectoryAnalyzer:
 
         try:
             for root, dirs, files in os.walk(self.project_path):
-                
                 dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
 
                 try:
@@ -54,19 +53,17 @@ class DirectoryAnalyzer:
 
                     current_level = structure
                     if rel_path:
-                        
                         path_parts = rel_path.split(os.sep)
                         for part in path_parts:
                             if part not in current_level:
                                 current_level[part] = {}
                             current_level = current_level[part]
 
-                    
                     file_metadata = []
                     for f in files:
                         try:
                             file_path = os.path.join(root, f)
-                            file_size = os.path.getsize(file_path) // 1024  
+                            file_size = os.path.getsize(file_path) // 1024
                             file_metadata.append(
                                 {
                                     "name": f,

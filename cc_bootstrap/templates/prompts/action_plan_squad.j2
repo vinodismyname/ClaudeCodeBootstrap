@@ -1,15 +1,17 @@
-You are an expert software architect and project manager specializing in coordinating multi-agent AI development teams (Claude Squad). Your task is to create a comprehensive, actionable plan document designed to guide multiple Claude Code instances working in parallel to implement a significant feature or solve a complex problem.
+You are an expert software architect and project manager specializing in coordinating multi-agent AI development teams
+(Claude Squad). Your task is to create a comprehensive, actionable plan document designed to guide multiple Claude Code
+instances working in parallel to implement a significant feature or solve a complex problem.
 
 # Raw Project Data
 
 You have been provided with:
-1.  **User's Project Plan:** (This may be high-level)
-    <plan_data>
+1. **User's Project Plan:** (This may be high-level)
+<plan_data>
     {{ user_plan_content }}
-    </plan_data>
+</plan_data>
 
-2.  **Project File Samples:** (A snapshot of existing code, if any)
-    <file_samples>
+2. **Project File Samples:** (A snapshot of existing code, if any)
+<file_samples>
     {% for path, content in project_file_samples.items() %}
     File: {{ path }}
     Content:
@@ -18,14 +20,55 @@ You have been provided with:
     ```
     ---
     {% endfor %}
-    </file_samples>
+</file_samples>
 
 {% if formatted_research_insights %}
-3.  **Research Insights:** (Relevant information from external research)
-    <research_insights>
+3. **Formatted Research Insights:** (Relevant information from external research)
+<research_insights>
     {{ formatted_research_insights }}
-    </research_insights>
+</research_insights>
 {% endif %}
+
+{% for server_q_name, server_data in fetched_smithery_mcp_configs.items() %}
+{% if server_data and server_data.raw_smithery_response %}
+4. **Configured MCP Servers from Smithery Registry:** (These will be available to Claude via `CLAUDE.md`)
+<smithery_mcp_data>
+    {% set actual_server_key = server_data.raw_smithery_response.qualifiedName | default(server_q_name) %}
+    - **Server: {{ server_data.display_name | default(actual_server_key) }}** (Key in `.mcp.json` is `{{
+    actual_server_key }}`)
+    {% if server_data.matched_from_query %}
+    -- *Note: This server was matched from your user query "{{ server_data.original_query }}" to "{{
+    server_data.matched_to }}"*
+    {% endif %}
+    -- Description: {{ server_data.description | default("No description provided by Smithery.") }}
+    {% if server_data.tools %}
+    -- Provides Tool Functions:
+    {% for mcp_tool_item in server_data.tools %}
+    --- `{{ mcp_tool_item.name }}`: {{ mcp_tool_item.description | default("No tool function description.") }}
+    {% endfor %}
+    {% else %}
+    --- No specific tool functions listed by Smithery for this server.
+    {% endif %}
+    {% set stdio_conn = (server_data.raw_smithery_response.connections | selectattr('type', 'equalto', 'stdio') | first)
+    %}
+    {% if stdio_conn and stdio_conn.configSchema and stdio_conn.configSchema.properties and
+    stdio_conn.configSchema.required %}
+    {% set required_props = [] %}
+    {% for prop_name in stdio_conn.configSchema.required %}
+    {% if prop_name in stdio_conn.configSchema.properties %}
+    {% set _ = required_props.append(prop_name) %}
+    {% endif %}
+    {% endfor %}
+    {% if required_props %}
+    - Note: If this server is configured via `stdio` in `.mcp.json`, it may require environment variables (e.g., `{{
+    required_props | map('upper') | join(', ') }}`) to be set for it to function correctly. These are typically API keys
+    or other secrets defined in its `configSchema`. Ensure these are available in the environment where Claude Code and
+    its MCP servers are run.
+    {% endif %}
+    {% endif %}
+</smithery_mcp_data>
+{% endif %}
+{% endfor %}
 
 {% if task_description %}
 ## Task-Specific Information:
@@ -40,63 +83,80 @@ You have been provided with:
 # Your Task
 
 First, thoroughly analyze all the raw project data provided above. Your goal is to infer:
--   The project's primary purpose and the specific objective of this plan.
--   The main programming languages, key technologies, and frameworks likely in use or required.
--   A suitable project archetype (e.g., web app, backend API, library).
--   Key existing files/modules and the overall project structure.
--   Common development patterns and best practices relevant to this project.
--   Natural boundaries for parallel work (e.g., frontend/backend, services, features).
+- The project's primary purpose and the specific objective of this plan.
+- The main programming languages, key technologies, and frameworks likely in use or required.
+- A suitable project archetype (e.g., web app, backend API, library).
+- Key existing files/modules and the overall project structure.
+- Common development patterns and best practices relevant to this project.
+- Natural boundaries for parallel work (e.g., frontend/backend, services, features).
 
-Next, based on your inferences, create a **detailed action plan document structured for parallel execution by a Claude Squad**. This plan will be the central coordination document. It must break down the overall objective into distinct workstreams, each assignable to a different Claude Code instance.
+Next, based on your inferences, create a **detailed action plan document structured for parallel execution by a Claude
+Squad**. This plan will be the central coordination document. It must break down the overall objective into distinct
+workstreams, each assignable to a different Claude Code instance. Each instance should be encouraged to follow the
+"Explore-Plan-Act TDD Workflow" from `CLAUDE.md` for its coding tasks.
 
 ## Required Plan Structure and Content:
 
 Your output must be a Markdown document with the following sections:
 
-1.  **Overall Objective for the Squad:**
-    *   A clear, concise statement of what the entire Claude Squad aims to achieve collaboratively.
+1. **Overall Objective for the Squad:**
+* A clear, concise statement of what the entire Claude Squad aims to achieve collaboratively.
 
-2.  **Project Context:**
-    *   A brief summary of the project's purpose, technologies, and architecture.
-    *   Key files, modules, and components relevant to this plan.
-    *   Any constraints or requirements that must be considered.
+2. **Project Context:**
+* A brief summary of the project's purpose, technologies, and architecture.
+* Key files, modules, and components relevant to this plan.
+* Any constraints or requirements that must be considered.
 
-3.  **Workstream Definitions:** (The core of the document)
-    *   Break down the objective into 2-5 distinct workstreams, each suitable for a different Claude instance.
-    *   For each workstream, include:
-        *   **Workstream ID & Title:** A unique identifier (e.g., "WS1") and descriptive name.
-        *   **Assigned Role:** A clear role title for the Claude instance (e.g., "Frontend Developer", "API Engineer").
-        *   **Objective:** What this workstream aims to accomplish.
-        *   **Files/Components:** The specific parts of the codebase this workstream will focus on.
-        *   **Tasks:**
-            *   Break down the workstream objective into actionable steps for the assigned Claude instance.
-            *   For each task: description, specific instructions, expected outcome, verification/testing steps.
-            *   `- [ ]` A Markdown checklist item for each task.
-        *   **Dependencies on Other Workstreams:** Clearly list any tasks from *other* workstreams that must be completed before this workstream (or specific tasks within it) can start or finish. (e.g., "Depends on: Workstream B - Task 3 completion. Signal: Workstream B will update this plan when `UserAuthToken` is ready.")
-        *   **Outputs/Deliverables for Other Workstreams:** List what this workstream will produce that other workstreams will consume. (e.g., "Delivers: `UserAuthToken` data structure to Workstream C")
+3. **Workstream Definitions:** (The core of the document)
+* Break down the objective into 2-5 distinct workstreams, each suitable for a different Claude instance.
+* For each workstream, include:
+* **Workstream ID & Title:** A unique identifier (e.g., "WS1") and descriptive name.
+* **Assigned Role:** A clear role title for the Claude instance (e.g., "Frontend Developer", "API Engineer").
+* **Objective:** What this workstream aims to accomplish.
+* **Files/Components:** The specific parts of the codebase this workstream will focus on.
+* **Tasks:**
+* Break down the workstream objective into actionable steps for the assigned Claude instance.
+* For each task: description, specific instructions (including following Explore-Plan-Act for coding), expected outcome,
+verification/testing steps.
+* If relevant, suggest using specific MCP tools (listed in `<smithery_mcp_data>` and detailed in `CLAUDE.md`) to
+    accomplish sub-steps.
+    * `- [ ]` A Markdown checklist item for each task.
+    * **Dependencies on Other Workstreams:** Clearly list any tasks from *other* workstreams that must be completed
+    before this workstream (or specific tasks within it) can start or finish. (e.g., "Depends on: Workstream B - Task 3
+    completion. Signal: Workstream B will update this plan when `UserAuthToken` is ready.")
+    * **Outputs/Deliverables for Other Workstreams:** List what this workstream will produce that other workstreams will
+    consume. (e.g., "Delivers: `UserAuthToken` data structure to Workstream C")
 
-4.  **Integration Points & Strategy:**
-    *   Describe how the outputs of different parallel workstreams will be integrated.
-    *   Identify key integration milestones or checkpoints.
-    *   `- [ ]` Checklist items for integration tasks.
+    4. **Integration Points & Strategy:**
+    * Describe how the outputs of different parallel workstreams will be integrated.
+    * Identify key integration milestones or checkpoints.
+    * `- [ ]` Checklist items for integration tasks.
 
-5.  **Overall Testing & QA Strategy for the Squad:**
-    *   How will the integrated solution be tested?
-    *   Responsibilities for different types of testing (e.g., one instance focuses on integration tests after components are delivered).
-    *   `- [ ]` Checklist items for overall QA.
+    5. **Overall Testing & QA Strategy for the Squad:**
+    * How will the integrated solution be tested?
+    * Responsibilities for different types of testing (e.g., one instance focuses on integration tests after components
+    are delivered).
+    * `- [ ]` Checklist items for overall QA.
 
-6.  **Coordination & Communication Guidelines (Brief):**
-    *   Remind users that Claude instances should refer to `CLAUDE.md` for project-wide standards.
-    *   Suggest that instances update their progress in this shared plan document (by checking off tasks). Instances should clearly signal task completion or readiness for handoff to dependent workstreams.
-    *   Mention that this plan is the source of truth for task assignments and dependencies. A user can direct an instance by saying, "You are the [Assigned Role], please perform your tasks in [Workstream Title/ID] as outlined in this plan."
+    6. **Coordination & Communication Guidelines (Brief):**
+    * Remind users that Claude instances should refer to `CLAUDE.md` for project-wide standards, detailed MCP tool
+    information, and the Explore-Plan-Act TDD workflow.
+    * Suggest that instances update their progress in this shared plan document (by checking off tasks). Instances
+    should clearly signal task completion or readiness for handoff to dependent workstreams.
+    * Mention that this plan is the source of truth for task assignments and dependencies. A user can direct an instance
+    by saying, "You are the [Assigned Role], please perform your tasks in [Workstream Title/ID] as outlined in this
+    plan."
 
-## Important Guidelines for Squad Plan Generation:
+    ## Important Guidelines for Squad Plan Generation:
 
-*   **Parallelism is Key:** Structure the plan to maximize concurrent work.
-*   **Clear Dependencies:** Make dependencies between workstreams explicit and easy to understand. This is critical for ordering work.
-*   **Well-Defined Interfaces:** Specify how components developed in parallel will interact.
-*   **Actionable Tasks within Workstreams:** Each task within a workstream should be clear and executable by a single Claude instance.
-*   **Assignability:** The plan should be written so a human can easily say, "Claude Instance Alpha, you are the 'Backend API Developer'. Please execute Workstream B from the plan."
-*   **Reference `CLAUDE.md`:** Instruct that all instances must adhere to the project's `CLAUDE.md`.
+    * **Parallelism is Key:** Structure the plan to maximize concurrent work.
+    * **Clear Dependencies:** Make dependencies between workstreams explicit and easy to understand. This is critical
+    for ordering work.
+    * **Well-Defined Interfaces:** Specify how components developed in parallel will interact.
+    * **Actionable Tasks within Workstreams:** Each task within a workstream should be clear and executable by a single
+    Claude instance.
+    * **Assignability:** The plan should be written so a human can easily say, "Claude Instance Alpha, you are the
+    'Backend API Developer'. Please execute Workstream B from the plan."
+    * **Reference `CLAUDE.md`:** Instruct that all instances must adhere to the project's `CLAUDE.md`.
 
-The final output should be ONLY the Markdown content of this detailed, squad-focused action plan.
+    The final output should be ONLY the Markdown content of this detailed, squad-focused action plan.

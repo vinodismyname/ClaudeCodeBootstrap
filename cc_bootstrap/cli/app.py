@@ -11,7 +11,6 @@ import logging
 import traceback
 from pathlib import Path
 from typing import List, Dict, Optional, Any
-import json
 
 import typer
 from rich.console import Console
@@ -24,6 +23,7 @@ from cc_bootstrap.config import (
     DEFAULT_THINKING_BUDGET,
     ENV_ANTHROPIC_API_KEY,
     ENV_PERPLEXITY_API_KEY,
+    ENV_SMITHERY_API_KEY,
     ENV_AWS_REGION,
     ENV_AWS_PROFILE,
     LLM_PROVIDERS,
@@ -172,30 +172,19 @@ def validate_path(
             raise
 
 
-def parse_mcp_tools_config(config_input: str) -> List[Dict[str, str]]:
-    logger = logging.getLogger("cc_bootstrap")
-    if not config_input:
-        return []
-    config_path = Path(config_input)
-    if config_path.is_file():
-        try:
-            if config_path.suffix.lower() == ".json":
-                with open(config_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            elif config_path.suffix.lower() in (".yaml", ".yml"):
-                import yaml
+def parse_smithery_server_names(names_input: Optional[str]) -> List[str]:
+    """
+    Parse a comma-separated string of Smithery server names or search queries.
 
-                with open(config_path, "r", encoding="utf-8") as f:
-                    return yaml.safe_load(f)
-            else:
-                logger.warning(
-                    f"Unsupported MCP tools file format: {config_path.suffix}. Treating as string."
-                )
-        except Exception as e:
-            logger.error(f"Error parsing MCP tools file {config_path}: {e}")
-            return []
-    tools = [{"name": tool.strip()} for tool in config_input.split(",") if tool.strip()]
-    return tools
+    Args:
+        names_input: Comma-separated string of Smithery qualified names or search terms
+
+    Returns:
+        List of Smithery server names or search queries
+    """
+    if not names_input:
+        return []
+    return [name.strip() for name in names_input.split(",") if name.strip()]
 
 
 @app.callback(invoke_without_command=True)
@@ -277,10 +266,16 @@ def bootstrap(
         readable=True,
         resolve_path=True,
     ),
-    mcp_tools_config: Optional[str] = typer.Option(
+    smithery_mcp_servers: Optional[str] = typer.Option(
         None,
-        "--mcp-tools-config",
-        help="Path to a JSON/YAML file defining MCP tools, or a comma-separated string.",
+        "--smithery-mcp-servers",
+        help="Comma-separated list of Smithery server names or search queries. Exact matches will be used directly, otherwise the best search match will be used (e.g., 'owner/repo,exa,search term').",
+    ),
+    smithery_api_key: Optional[str] = typer.Option(
+        None,
+        "--smithery-api-key",
+        help=f"Smithery API key (or use {ENV_SMITHERY_API_KEY} env var).",
+        envvar=ENV_SMITHERY_API_KEY,
     ),
     use_claude_squad: bool = typer.Option(
         False,
@@ -378,7 +373,8 @@ def bootstrap(
     cli_params: Dict[str, Any] = {
         "project_path": project_path,
         "project_plan_file": project_plan_file,
-        "mcp_tools_config": mcp_tools_config,
+        "smithery_mcp_servers": smithery_mcp_servers,
+        "smithery_api_key": smithery_api_key,
         "use_claude_squad": use_claude_squad,
         "use_perplexity": use_perplexity,
         "perplexity_api_key": perplexity_api_key,
@@ -541,19 +537,21 @@ def bootstrap(
         else:
             format_success("Project plan loaded successfully.")
 
-        mcp_tools = []
-        if cli_params["mcp_tools_config"]:
-            with create_spinner("Parsing MCP tools configuration..."):
-                mcp_tools = parse_mcp_tools_config(cli_params["mcp_tools_config"])
-            if not mcp_tools:
-                format_warning("No valid MCP tools found in configuration or file.")
+        parsed_names = []
+        if cli_params["smithery_mcp_servers"]:
+            with create_spinner("Parsing Smithery MCP server names..."):
+                parsed_names = parse_smithery_server_names(
+                    cli_params["smithery_mcp_servers"]
+                )
+            if not parsed_names:
+                format_warning("No valid Smithery MCP server names found.")
                 if is_interactive and not prompt_yes_no(
-                    "Continue without these configured MCP tools?", default=True
+                    "Continue without Smithery MCP servers?", default=True
                 ):
                     raise typer.Exit(code=1)
             else:
                 format_success(
-                    f"MCP tools configuration parsed: Found {len(mcp_tools)} tool(s)."
+                    f"Smithery MCP server names parsed: Found {len(parsed_names)} server(s)."
                 )
 
         format_section("Asset Generation")
@@ -599,7 +597,8 @@ def bootstrap(
                     cli_params["use_perplexity"],
                     cli_params["perplexity_api_key"],
                     cli_params["use_claude_squad"],
-                    mcp_tools,
+                    smithery_server_names=parsed_names,
+                    smithery_api_key=cli_params["smithery_api_key"],
                 )
                 results = dynamic_workflow.execute(progress_bar, status_updater)
             except Exception as e:

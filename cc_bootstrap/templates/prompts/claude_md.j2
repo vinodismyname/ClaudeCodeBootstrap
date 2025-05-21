@@ -1,113 +1,212 @@
-You are an expert software architect tasked with creating a concise yet comprehensive CLAUDE.md file for a software project. This file will serve as foundational context for Claude Code to effectively assist with development. Balance completeness with token efficiency, as this file is loaded with each Claude Code session.
+You are an expert software architect tasked with creating a concise yet comprehensive CLAUDE.md file for a software
+project. This file will serve as foundational context for Claude Code to effectively assist with development. Balance
+completeness with token efficiency, as this file is loaded with each Claude Code session.
 
 # Raw Project Data
 
 You will be provided with:
 1. The user's project plan
 2. A sample of files from the project directory
+3. Information about configured MCP tools from Smithery Registry (if any)
+4. Formatted research insights (if any)
 
 ## User's Project Plan:
 <plan_data>
-{{ user_plan_content }}
+  {{ user_plan_content }}
 </plan_data>
 
 ## Project File Samples:
 <file_samples>
-{% for path, content in project_file_samples.items() %}
-File: {{ path }}
-Content:
-```
-{{ content|truncate(500) }}
-```
----
-{% endfor %}
+  {% for path, content in project_file_samples.items() %}
+  File: {{ path }}
+  Content:
+  ```
+  {{ content|truncate(500) }}
+  ```
+  ---
+  {% endfor %}
 </file_samples>
 
-# Your Task
-
-First, analyze the raw project data provided above to infer:
-- The project's primary purpose and goals
-- The main programming languages and key technologies/frameworks likely in use
-- A suitable project archetype or category (e.g., web application, backend API, data science project, etc.)
-- Key files and overall project structure
-- Common commands that might be relevant for this project
-
-Then, based on your inferences, create a CLAUDE.md file that is:
-1. **Concise and token-efficient** - Prioritize essential information over exhaustive details
-2. **Well-structured with clear hierarchy** - Use Markdown headings (h1, h2, h3) to organize information
-3. **Focused on project-specific guidance** - Include only what Claude Code needs to know about this particular project
-
-Include the following sections, adapting them to the specific project type:
-
-## 1. Project Overview
-A brief description of the project's purpose, goals, and main features. Include a tech stack summary and high-level architecture.
-
-## 2. Development Environment Setup
-Concise instructions for setting up the development environment, focusing on essential commands and prerequisites.
-
-## 3. Project Structure
-An explanation of the most important directories and files, focusing on entry points, core modules, and configuration files. Use bullet points for clarity.
-
-## 4. Common Commands
-A reference list of the most frequently needed commands for development, testing, building, and deployment. Format as a table or bullet list for quick reference.
-
-## 5. Coding Standards
-Focus on project-specific conventions that Claude Code must follow. Skip generic language standards in favor of team-specific practices.
-
-## 6. Git Workflow
-Brief description of branching strategy, commit message format, and PR/review process. Only include what Claude Code needs to follow team practices.
-
-## 7. Explore-Plan-Act TDD Workflow
-Create a section that explicitly outlines the preferred workflow pattern:
-
-- **Explore Phase**: Instructions for systematically investigating relevant parts of the codebase before making changes. Include guidance on which tools to use (e.g., `Grep`, `Read`, `LS`) and how to analyze dependencies.
-
-- **Plan Phase**: Guidelines for designing solutions, with emphasis on planning tests before implementation. Include guidance on writing failing tests first, documenting assumptions, and considering edge cases.
-
-- **Act Phase**: Instructions for implementing the solution through Test-Driven Development:
-  1. Write failing tests first
-  2. Implement minimum code to make tests pass
-  3. Refactor while keeping tests green
-  4. Repeat for each component or feature
-
-Include language-specific testing guidance and preferred test frameworks based on the detected technologies.
-
-## 8. Critical Guidelines for Claude
-This section is vital - include specific directives on Claude Code's behavior:
-
-- NEVER create mock data or simplified components unless explicitly told to do so
-- When asked to refactor, prioritize clarity and maintainability over cleverness
-- Always add comprehensive unit tests for new functionality, following the project's testing patterns
-- If unsure about a requirement, ask for clarification before proceeding
-- Before committing, ensure all tests pass and linting errors are resolved
-- DO NOT invent new utility functions if a suitable one likely exists in `/src/utils`. Check there first
-- [Add 2-3 additional project-specific directives based on your analysis]
-
-Use clear imperative language with words like "ALWAYS", "NEVER", and "DO NOT" for critical directives. Format these as a bulleted list for clarity.
-
-{% if use_claude_squad %}
-## 9. Claude Squad Guidelines
-Include specific guidance for parallel task execution and coordination between Claude instances. Explain:
-- How work should be divided (by feature, layer, or function)
-- How Git worktrees should be used for isolation
-- Communication mechanisms between instances
-- Integration points and coordination approach
-- How to apply the Explore-Plan-Act TDD workflow in a multi-instance context
-Reference that detailed workstream breakdowns can be found in ACTION_PLAN.md.
+{% if fetched_smithery_mcp_configs and fetched_smithery_mcp_configs|length > 0 %}
+## Configured MCP Servers from Smithery Registry:
+This section provides an overview of MCP servers fetched from Smithery. The actual configuration and server keys are in
+`.mcp.json`.
+<smithery_mcp_data>
+  {% for server_q_name, server_data in fetched_smithery_mcp_configs.items() %}
+  {% if server_data and server_data.raw_smithery_response %}
+  {% set actual_server_key = server_data.raw_smithery_response.qualifiedName | default(server_q_name) %}
+  Server Display Name: {{ server_data.display_name | default(actual_server_key) }}
+  Server Qualified Name (this is typically the SERVER_KEY in `.mcp.json`): `{{ actual_server_key }}`
+  Description: {{ server_data.description | default("No description provided.") }}
+  {% if server_data.matched_from_query %}
+  (Matched from user query: "{{ server_data.original_query }}")
+  {% endif %}
+  Provided Tool Functions by this Server:
+  {% if server_data.tools %}
+  {% for mcp_tool_item in server_data.tools %}
+  - Tool Function Name: `{{ mcp_tool_item.name }}`
+  Description: {{ mcp_tool_item.description | default("No tool function description provided.") }}
+  {% endfor %}
+  {% else %}
+  No specific tool functions listed by Smithery for this server.
+  {% endif %}
+  ---
+  {% endif %}
+  {% endfor %}
+</smithery_mcp_data>
 {% endif %}
 
 {% if formatted_research_insights %}
-Use the following research insights to enhance your understanding and recommendations:
+## Formatted Research Insights:
 <research_summary>
-{{ formatted_research_insights }}
+  {{ formatted_research_insights }}
 </research_summary>
 {% endif %}
 
-# Important Formatting Guidelines
+# Your Task
 
-- Use a clean, hierarchical structure with clear headings (h1 for main sections, h2 for subsections)
-- When referring to files or directories, use code formatting (`like_this`)
-- Ruthlessly prioritize information - include only what's truly necessary
-- For documentation links or visual references, provide clear paths or URLs in a "Resources" section
-- If linking to visual diagrams or architecture images, indicate their location: "See architecture diagram at docs/architecture.png"
-- For behavior directives in section 8, use bold formatting for keywords like **ALWAYS**, **NEVER**, and **DO NOT**
+First, analyze all the raw project data provided above to infer:
+- The project's primary purpose and goals.
+- The main programming languages and key technologies/frameworks likely in use (pay close attention to file extensions,
+import statements, and configuration files in `<project_file_samples>`).
+  - A suitable project archetype or category (e.g., web application, backend API, data science project, etc.).
+  - Key files and overall project structure.
+  - Common commands that might be relevant for this project, considering the inferred tech stack.
+
+  Then, based on your inferences, create a CLAUDE.md file that is:
+  1. **Concise and token-efficient** - Prioritize essential information over exhaustive details.
+  2. **Well-structured with clear hierarchy** - Use Markdown headings (h1, h2, h3) to organize information.
+  3. **Focused on project-specific guidance** - Include only what Claude Code needs to know about this particular
+  project.
+
+  Include the following sections, adapting them to the specific project type:
+
+  ## 1. Project Overview
+  A brief description of the project's purpose, goals, and main features. Include a tech stack summary (inferred from
+  file samples and plan) and high-level architecture if discernible.
+
+  ## 2. Development Environment Setup
+  Concise instructions for setting up the development environment, focusing on essential commands (e.g., `npm install`,
+  `pip install -r requirements.txt`) and prerequisites.
+
+  ## 3. Project Structure
+  An explanation of the most important directories and files, focusing on entry points, core modules, and configuration
+  files. Use bullet points for clarity. Highlight key files identified in `<project_file_samples>`.
+
+    ## 4. Common Commands
+    A reference list of the most frequently needed commands for development, testing, building, and deployment, tailored
+    to the inferred tech stack. Format as a table or bullet list for quick reference.
+
+    ## 5. Coding Standards
+    Focus on project-specific conventions that Claude Code must follow. If not explicitly stated in the plan, infer from
+    file samples or suggest common best practices for the identified tech stack. Skip generic language standards in
+    favor of team-specific practices if known.
+
+    ## 6. Git Workflow
+    Brief description of branching strategy, commit message format, and PR/review process. Only include what Claude Code
+    needs to follow team practices.
+
+    ## 7. Explore-Plan-Act TDD Workflow
+    Create a section that explicitly outlines the preferred workflow pattern:
+    - **Explore Phase**: Instructions for systematically investigating relevant parts of the codebase before making
+    changes. Include detailed guidance on which tools to use (e.g., `Grep`, `Read`, `LS`) and how to analyze
+    dependencies.
+    Emphasize consulting this `CLAUDE.md` and any linked resources.
+    - **Plan Phase**: Guidelines for designing solutions, with emphasis on planning tests before implementation. Include
+    guidance on writing failing tests first, documenting assumptions, and considering edge cases.
+    - **Act Phase**: Instructions for implementing the solution through Test-Driven Development:
+    1. Write failing tests first.
+    2. Implement minimum code to make tests pass.
+    3. Refactor while keeping tests green.
+    4. Repeat for each component or feature.
+    Include language-specific testing guidance and preferred test frameworks based on the detected technologies.
+
+    ## 8. Critical Guidelines for Claude
+    This section is vital - include specific directives on Claude Code's behavior:
+    - **ALWAYS** verify assumptions against the codebase or ask for clarification.
+    - **NEVER** create mock data or simplified components unless explicitly told to do so.
+    - When asked to refactor, **PRIORITIZE** clarity and maintainability over cleverness, adhering to project
+    conventions.
+    - **ALWAYS** add comprehensive unit tests for new functionality, following the project's testing patterns.
+    - If unsure about a requirement, **ASK** for clarification before proceeding.
+    - Before committing, **ENSURE** all tests pass and linting errors are resolved.
+    - **DO NOT** invent new utility functions if a suitable one likely exists (e.g., in a `utils/` or `helpers/`
+    directory). Check there first.
+    - [Add 2-3 additional project-specific directives based on your analysis of the project plan and file samples.]
+    Use clear imperative language with bolded keywords like **ALWAYS**, **NEVER**, and **DO NOT** for critical
+    directives. Format these as a bulleted list for clarity.
+
+    {% if use_claude_squad %}
+    ## 9. Claude Squad Guidelines
+    Include specific guidance for parallel task execution and coordination between Claude instances. Explain:
+    - How work should be divided (by feature, layer, or function).
+    - How Git worktrees should be used for isolation.
+    - Communication mechanisms between instances (e.g., updating a shared `ACTION_PLAN.md`).
+    - Integration points and coordination approach.
+    - How to apply the Explore-Plan-Act TDD workflow in a multi-instance context.
+    Reference that detailed workstream breakdowns can be found in `ACTION_PLAN.md`.
+    {% endif %}
+
+    {% if fetched_smithery_mcp_configs and fetched_smithery_mcp_configs|length > 0 %}
+    ## 10. Available MCP Tools from Smithery Registry
+    This project has MCP tools configured via Smithery Registry, as detailed in `.mcp.json`. You can use these tools to
+    extend your capabilities.
+
+    **Tool Invocation Format:** `mcp__SERVER_KEY__TOOL_FUNCTION_NAME`
+
+    - **`SERVER_KEY`**: This is the exact key used for the server within the `mcpServers` object in your project's
+    `.mcp.json` file. It is typically the server's qualified name from Smithery (e.g., "exa", "@owner/repo"). **Always
+    refer to `.mcp.json` for the definitive `SERVER_KEY` for each configured tool.**
+    - **`TOOL_FUNCTION_NAME`**: This is the specific function provided by the server.
+
+    Below is a summary of servers fetched from Smithery.
+
+    {% for server_q_name, server_data in fetched_smithery_mcp_configs.items() %}
+    {% if server_data and server_data.raw_smithery_response %}
+    {% set actual_server_key = server_data.raw_smithery_response.qualifiedName | default(server_q_name) %}
+    - **Server: {{ server_data.display_name | default(actual_server_key) }}** (Key in `.mcp.json` is `{{
+    actual_server_key }}`)
+    {% if server_data.matched_from_query %}
+    - *Note: This server was matched from your user query "{{ server_data.original_query }}" to "{{
+    server_data.matched_to }}"*
+    {% endif %}
+    - Description: {{ server_data.description | default("No description provided by Smithery.") }}
+    {% if server_data.tools %}
+    - Provides Tool Functions:
+    {% for mcp_tool_item in server_data.tools %}
+    - `{{ mcp_tool_item.name }}`: {{ mcp_tool_item.description | default("No tool function description.") }}
+    {% endfor %}
+    {% else %}
+    - No specific tool functions listed by Smithery for this server.
+    {% endif %}
+    {% set stdio_conn = (server_data.raw_smithery_response.connections | selectattr('type', 'equalto', 'stdio') | first)
+    %}
+    {% if stdio_conn and stdio_conn.configSchema and stdio_conn.configSchema.properties and
+    stdio_conn.configSchema.required %}
+    {% set required_props = [] %}
+    {% for prop_name in stdio_conn.configSchema.required %}
+    {% if prop_name in stdio_conn.configSchema.properties %}
+    {% set _ = required_props.append(prop_name) %}
+    {% endif %}
+    {% endfor %}
+    {% if required_props %}
+    - Note: If this server is configured via `stdio` in `.mcp.json`, it may require environment variables (e.g., `{{
+    required_props | map('upper') | join(', ') }}`) to be set for it to function correctly. These are typically API keys
+    or other secrets defined in its `configSchema`. Ensure these are available in the environment where Claude Code and
+    its MCP servers are run.
+    {% endif %}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    ## 11. Key Resources (Optional)
+    If there are links to external documentation, architecture diagrams (e.g., `docs/architecture.png`), or other
+    critical project resources, list them here. If none are apparent from the project plan or file samples, this section
+    can be omitted or state "To be added".
+
+    # Important Formatting Guidelines
+    - Use a clean, hierarchical structure with clear headings (h1 for main sections, h2 for subsections).
+    - When referring to files or directories, use code formatting (`like_this`).
+    - Ruthlessly prioritize information - include only what's truly necessary.
+    - For behavior directives in section 8, use bold formatting for keywords like **ALWAYS**, **NEVER**, and **DO NOT**.

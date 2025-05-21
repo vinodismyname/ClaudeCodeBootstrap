@@ -170,12 +170,23 @@ class LLMInterface:
 
             return f"[This is a placeholder response for dry run. Would generate content based on {prompt_template}]"
 
+        # Display the prompt in verbose mode
+        self.logger.debug("=" * 50)
+        self.logger.debug("=== PROMPT TEMPLATE ===")
+        self.logger.debug(f"{prompt_template}")
+        self.logger.debug("=== RENDERED PROMPT ===")
+        self.logger.debug(f"{prompt}")
+
         try:
             self.logger.debug(
                 f"Sending prompt to {self.model} via {self.provider_type}..."
             )
 
             system_prompt = "You are an expert software developer tasked with creating configuration files for Anthropic's Claude Code. Claude Code is an AI coding assistant that runs in the terminal. Generate professional, well-structured, and comprehensive content for the requested configuration file."
+
+            # Display the system prompt in verbose mode
+            self.logger.debug("=== SYSTEM PROMPT ===")
+            self.logger.debug(f"{system_prompt}")
 
             if self.enable_thinking:
                 max_tokens_to_use = MAX_TOKENS_THINKING_ENABLED
@@ -196,6 +207,7 @@ class LLMInterface:
             )
 
             self.logger.debug("Received response from LLM API")
+            self.logger.debug("=" * 50)
             return content
 
         except Exception as e:

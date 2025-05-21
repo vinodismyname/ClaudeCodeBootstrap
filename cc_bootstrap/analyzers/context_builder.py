@@ -35,15 +35,13 @@ class ContextBuilder:
         Returns:
             Dictionary containing raw project context
         """
-        
+
         directory_analyzer = DirectoryAnalyzer(self.project_path)
         directory_analysis = directory_analyzer.analyze()
 
-        
         file_sampler = FileSampler(self.project_path, directory_analysis["structure"])
         project_file_samples = file_sampler.sample()
 
-        
         user_plan_content = None
         if self.plan_file:
             try:
@@ -52,7 +50,6 @@ class ContextBuilder:
             except Exception as e:
                 print(f"Warning: Could not read plan file: {e}")
 
-        
         context = {
             "user_plan_content": user_plan_content,
             "project_file_samples": project_file_samples,

@@ -1,15 +1,17 @@
-You are an expert software architect and project manager tasked with creating a comprehensive, actionable plan document. This document will transform the user's initial project plan into a detailed, step-by-step guide for a single Claude Code instance to implement the primary requested feature or solve the main problem.
+You are an expert software architect and project manager tasked with creating a comprehensive, actionable plan document.
+This document will transform the user's initial project plan into a detailed, step-by-step guide for a single Claude
+Code instance to implement the primary requested feature or solve the main problem.
 
 # Raw Project Data
 
 You have been provided with:
-1.  **User's Project Plan:** (This may be high-level)
-    <plan_data>
+1. **User's Project Plan:** (This may be high-level)
+<plan_data>
     {{ user_plan_content }}
-    </plan_data>
+</plan_data>
 
-2.  **Project File Samples:** (A snapshot of existing code, if any)
-    <file_samples>
+2. **Project File Samples:** (A snapshot of existing code, if any)
+<file_samples>
     {% for path, content in project_file_samples.items() %}
     File: {{ path }}
     Content:
@@ -18,15 +20,56 @@ You have been provided with:
     ```
     ---
     {% endfor %}
-    </file_samples>
+</file_samples>
 
 {% if formatted_research_insights %}
-3.  **Research Insights:** (Relevant information from external research)
-    <research_insights>
+3. **Formatted Research Insights:** (Relevant information from external research)
+<research_insights>
     {{ formatted_research_insights }}
-    </research_insights>
+</research_insights>
 {% endif %}
 
+
+{% for server_q_name, server_data in fetched_smithery_mcp_configs.items() %}
+{% if server_data and server_data.raw_smithery_response %}
+4. **Configured MCP Servers from Smithery Registry:** (These will be available to Claude via `CLAUDE.md`)
+<smithery_mcp_data>
+    {% set actual_server_key = server_data.raw_smithery_response.qualifiedName | default(server_q_name) %}
+    - **Server: {{ server_data.display_name | default(actual_server_key) }}** (Key in `.mcp.json` is `{{
+    actual_server_key }}`)
+    {% if server_data.matched_from_query %}
+    -- *Note: This server was matched from your user query "{{ server_data.original_query }}" to "{{
+    server_data.matched_to }}"*
+    {% endif %}
+    -- Description: {{ server_data.description | default("No description provided by Smithery.") }}
+    {% if server_data.tools %}
+    -- Provides Tool Functions:
+    {% for mcp_tool_item in server_data.tools %}
+    --- `{{ mcp_tool_item.name }}`: {{ mcp_tool_item.description | default("No tool function description.") }}
+    {% endfor %}
+    {% else %}
+    --- No specific tool functions listed by Smithery for this server.
+    {% endif %}
+    {% set stdio_conn = (server_data.raw_smithery_response.connections | selectattr('type', 'equalto', 'stdio') | first)
+    %}
+    {% if stdio_conn and stdio_conn.configSchema and stdio_conn.configSchema.properties and
+    stdio_conn.configSchema.required %}
+    {% set required_props = [] %}
+    {% for prop_name in stdio_conn.configSchema.required %}
+    {% if prop_name in stdio_conn.configSchema.properties %}
+    {% set _ = required_props.append(prop_name) %}
+    {% endif %}
+    {% endfor %}
+    {% if required_props %}
+    - Note: If this server is configured via `stdio` in `.mcp.json`, it may require environment variables (e.g., `{{
+    required_props | map('upper') | join(', ') }}`) to be set for it to function correctly. These are typically API keys
+    or other secrets defined in its `configSchema`. Ensure these are available in the environment where Claude Code and
+    its MCP servers are run.
+    {% endif %}
+    {% endif %}
+</smithery_mcp_data>
+{% endif %}
+{% endfor %}
 {% if task_description %}
 ## Task-Specific Information:
 {{ task_description }}
@@ -40,58 +83,67 @@ You have been provided with:
 # Your Task
 
 First, thoroughly analyze all the raw project data provided above. Your goal is to infer:
--   The project's primary purpose and the specific objective of this plan.
--   The main programming languages, key technologies, and frameworks likely in use or required.
--   A suitable project archetype (e.g., web app, backend API, library).
--   Key existing files/modules and the overall project structure.
--   Common development patterns and best practices relevant to this project.
+- The project's primary purpose and the specific objective of this plan.
+- The main programming languages, key technologies, and frameworks likely in use or required.
+- A suitable project archetype (e.g., web app, backend API, library).
+- Key existing files/modules and the overall project structure.
+- Common development patterns and best practices relevant to this project.
 
-Next, based on your inferences, create a **highly detailed and granular action plan document**. This plan is intended to guide a *single* Claude Code instance through the entire process of implementing the objective. The plan should be structured to follow a logical development workflow, such as "Explore, Plan (refine this document), Code, Test, Commit."
+Next, based on your inferences, create a **highly detailed and granular action plan document**. This plan is intended to
+guide a *single* Claude Code instance through the entire process of implementing the objective. The plan should
+encourage adherence to the "Explore-Plan-Act TDD Workflow" outlined in `CLAUDE.md` for each significant coding task.
 
 ## Required Plan Structure and Content:
 
 Your output must be a Markdown document with the following sections:
 
-1.  **Overall Objective:**
-    *   A clear, concise statement of what this plan aims to achieve. Derive this from the user's input and your analysis.
+1. **Overall Objective:**
+* A clear, concise statement of what this plan aims to achieve. Derive this from the user's input and your analysis.
 
-2.  **Project Context:**
-    *   A brief summary of the project's purpose, technologies, and architecture.
-    *   Key files, modules, and components relevant to this plan.
-    *   Any constraints or requirements that must be considered.
+2. **Project Context:**
+* A brief summary of the project's purpose, technologies, and architecture.
+* Key files, modules, and components relevant to this plan.
+* Any constraints or requirements that must be considered.
 
-3.  **Implementation Plan:**
-    *   A sequential, step-by-step breakdown of tasks to achieve the objective.
-    *   For each task, include:
-        *   A descriptive title.
-        *   Detailed instructions. For implementation tasks, consider including sub-steps for writing/running tests and ensuring code quality (e.g., linting) as part of the task's completion. If a task involves complex logic or external interactions, consider including brief notes on error handling or what Claude should do if it encounters issues.
-        *   Files/modules to modify.
-        *   Expected outcome.
-        *   Verification steps (how to test the change).
-        *   `- [ ]` A Markdown checklist item for tracking progress.
+3. **Implementation Plan:**
+* A sequential, step-by-step breakdown of tasks to achieve the objective.
+* For each task, include:
+* A descriptive title.
+* Detailed instructions. For implementation tasks, explicitly mention following the Explore-Plan-Act TDD workflow
+(Explore relevant code, Plan tests and implementation, Act by writing tests then code).
+* If relevant, suggest using specific MCP tools (listed in `<smithery_mcp_data>` and detailed in `CLAUDE.md`) to
+    accomplish sub-steps (e.g., "Use `mcp__exa_search__findSimilarText` to research X before implementing Y").
+    * Files/modules to modify or create.
+    * Expected outcome.
+    * Verification steps (how to test the change, including writing unit/integration tests).
+    * Considerations for error handling or what Claude should do if it encounters issues.
+    * `- [ ]` A Markdown checklist item for tracking progress.
 
-4.  **Testing Strategy:**
-    *   Specific tests to write or run to verify the implementation.
-    *   Test cases to cover, including edge cases.
-    *   `- [ ]` Checklist items for each test.
+    4. **Testing Strategy:**
+    * Specific tests to write or run to verify the implementation.
+    * Test cases to cover, including edge cases.
+    * `- [ ]` Checklist items for each test.
 
-5.  **Integration & Deployment:**
-    *   Steps to integrate the changes with the rest of the codebase.
-    *   Any deployment or release considerations.
-    *   `- [ ]` Checklist items for integration tasks.
+    5. **Integration & Deployment (if applicable):**
+    * Steps to integrate the changes with the rest of the codebase.
+    * Any deployment or release considerations.
+    * `- [ ]` Checklist items for integration tasks.
 
-6.  **Potential Challenges & Mitigations:**
-    *   Anticipated difficulties and how to address them.
-    *   Alternative approaches if the primary strategy encounters obstacles.
-    *   Considerations for error handling and recovery if not covered in individual implementation steps.
+    6. **Potential Challenges & Mitigations:**
+    * Anticipated difficulties and how to address them.
+    * Alternative approaches if the primary strategy encounters obstacles.
 
-## Important Guidelines for Plan Generation:
+    ## Important Guidelines for Plan Generation:
 
-*   **Granularity:** Make tasks as small and specific as reasonably possible. Assume Claude Code will execute them one by one.
-*   **Clarity:** Use clear, unambiguous language.
-*   **Actionable Steps:** Each task should be something Claude Code can directly act upon.
-*   **Contextual Awareness:** The plan must be tailored to the inferred project type, technologies, and existing structure.
-*   **Reference `CLAUDE.md`:** Explicitly instruct Claude Code to refer to the project's `CLAUDE.md` for coding standards, common commands, architectural guidelines, and tool usage.
-*   **Self-Contained:** This document should be the primary guide for this specific objective.
+    * **Granularity:** Make tasks as small and specific as reasonably possible. Assume Claude Code will execute them one
+    by one.
+    * **Clarity:** Use clear, unambiguous language.
+    * **Actionable Steps:** Each task should be something Claude Code can directly act upon.
+    * **Contextual Awareness:** The plan must be tailored to the inferred project type, technologies, and existing
+    structure.
+    * **Reference `CLAUDE.md`:** Explicitly instruct Claude Code to refer to the project's `CLAUDE.md` for coding
+    standards, common commands, architectural guidelines, detailed MCP tool information, and the Explore-Plan-Act TDD
+    workflow.
+    * **Self-Contained:** This document should be the primary guide for this specific objective.
 
-The final output should be ONLY the Markdown content of this detailed action plan.
+    The final output should be ONLY the Markdown content of this detailed action plan.

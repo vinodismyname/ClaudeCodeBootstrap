@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+tests/
 
 # Virtual environments
 venv/
@@ -18,6 +19,7 @@ build/
 
 # Local development settings
 .env
+test_plan.md
 
 # IDE specific files
 .idea/
