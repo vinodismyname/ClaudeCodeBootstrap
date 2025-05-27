@@ -32,11 +32,11 @@ Your output will be parsed as JSON and saved as individual `.claude/commands/{ca
   {% if fetched_smithery_mcp_configs and fetched_smithery_mcp_configs|length > 0 %}
   <available_mcp_tools_from_smithery>
     {% for server_q_name, server_data in fetched_smithery_mcp_configs.items() %}
-    {% if server_data and server_data.raw_smithery_response %}
-    {% set actual_server_key = server_data.raw_smithery_response.qualifiedName | default(server_q_name) %}
+      {% if server_data and server_data.raw_smithery_response %}
+        {% set actual_server_key = server_data.raw_smithery_response.qualifiedName | default(server_q_name) %}
     <tool_server name="{{ actual_server_key }}"
-      displayName="{{ server_data.display_name | default(actual_server_key) }}"
-      description="{{ server_data.description | default('No description provided.') }}">
+                 displayName="{{ server_data.display_name | default(actual_server_key) }}"
+                 description="{{ server_data.description | default('No description provided.') }}">
       {% if server_data.matched_from_query %}
       <matchedFromQuery originalQuery="{{ server_data.original_query }}" matchedTo="{{ server_data.matched_to }}" />
       {% endif %}
@@ -48,9 +48,11 @@ Your output will be parsed as JSON and saved as individual `.claude/commands/{ca
         <requiredParams>{{ server_data.parsed_schema_info.required_params | join(', ') }}</requiredParams>
         <params>
           {% for param_name, param_details in server_data.parsed_schema_info.params.items() %}
-          <param name="{{ param_name }}" type="{{ param_details.type }}" description="{{ param_details.description }}"
-            default="{{ param_details.default }}"
-            enum="{{ param_details.enum | join(', ') if param_details.enum else '' }}" />
+          <param name="{{ param_name }}"
+                 type="{{ param_details.type }}"
+                 description="{{ param_details.description }}"
+                 default="{{ param_details.default }}"
+                 enum="{{ param_details.enum | join(', ') if param_details.enum else '' }}" />
           {% endfor %}
         </params>
       </parsedSchemaInfo>
@@ -59,15 +61,15 @@ Your output will be parsed as JSON and saved as individual `.claude/commands/{ca
       <provided_tools_by_server>
         {% for mcp_tool_item in server_data.tools %}
         <mcp_tool name="{{ mcp_tool_item.name }}"
-          description="{{ mcp_tool_item.description | default('No tool function description.') }}"
-          invocation_example="mcp__{{ actual_server_key }}__{{ mcp_tool_item.name }}" />
+                  description="{{ mcp_tool_item.description | default('No tool function description.') }}"
+                  invocation_example="mcp__{{ actual_server_key }}__{{ mcp_tool_item.name }}" />
         {% endfor %}
       </provided_tools_by_server>
       {% else %}
       <provided_tools_by_server /> {# Empty tag if no tools #}
       {% endif %}
     </tool_server>
-    {% endif %}
+      {% endif %}
     {% endfor %}
   </available_mcp_tools_from_smithery>
   {% endif %}
@@ -75,136 +77,116 @@ Your output will be parsed as JSON and saved as individual `.claude/commands/{ca
 
 <task_instructions>
   Your primary goal is to generate the Markdown content for ALL custom commands defined in `<command_definitions>`.
-    These custom commands are vital for automating repetitive tasks, enforcing project standards, and boosting developer
-    productivity with Claude Code. Your response must be a single, valid JSON object.
+  These custom commands are vital for automating repetitive tasks, enforcing project standards, and boosting developer
+  productivity with Claude Code. Your response must be a single, valid JSON object.
 
-    **Phase 1: Project Analysis & Inference**
-    First, thoroughly analyze the `<raw_project_data>` (including `<user_plan>` and `<project_file_samples>`) to infer:
-          - The project's primary purpose, goals, and domain.
-          - The main programming languages, key technologies, libraries, and frameworks likely in use.
-          - A suitable project archetype (e.g., Web Application, Backend API, Mobile App, Data Science Project, CLI
-          Tool, Infrastructure/DevOps).
-          - Key files, overall project structure, and existing conventions.
+  **Phase 1: Project Analysis & Inference**
+  First, thoroughly analyze the `<raw_project_data>` (including `<user_plan>` and `<project_file_samples>`) to infer:
+    - The project's primary purpose, goals, and domain.
+    - The main programming languages, key technologies, libraries, and frameworks likely in use.
+    - A suitable project archetype (e.g., Web Application, Backend API, Mobile App, Data Science Project, CLI Tool, Infrastructure/DevOps).
+    - Key files, overall project structure, and existing conventions.
 
-          **Phase 2: Generating Markdown Content for Each Custom Command**
-          For each `<command>` specified in the `<command_definitions>`:
-              1. **Understand Command Intent:** Use the `description` attribute of the `<command>` and its parent `
-                <category>` as the primary guide for the command's purpose.
-                  2. **Craft an Effective Prompt for Claude Code:** The Markdown content you generate for each command
-                  *is itself a prompt* that will be used by Claude Code. It must be well-engineered. Strive to make each
-                  command:
-                  * **Clear and Specific:** Ambiguity leads to poor results.
-                  * **Action-Oriented:** Clearly state what Claude Code should do.
-                  * **Context-Aware:** Leverage the project analysis from Phase 1.
-                  3. **Key Elements to Incorporate into the Generated Markdown:**
-                  * **`$ARGUMENTS` Placeholder:** If the command is designed to accept user input (e.g., a file path, a
-                  feature name), use the `$ARGUMENTS` placeholder in the Markdown. Explain briefly in the command how
-                  `$ARGUMENTS` will be used if not obvious.
-                  * **Integration with `CLAUDE.md`:** Crucially, instruct Claude Code to refer to the project's
-                  `CLAUDE.md` file for relevant project-specific standards, conventions, or context. Be specific about
-                  *what* to look for in `CLAUDE.md` based on the command's purpose.
-                  * *Example for a test generation command:* "Consult `CLAUDE.md` for the project's designated testing
-                  framework, preferred assertion libraries, test file naming conventions, and any guidelines on mock
-                  data generation."
-                  * *Example for a Git commit command:* "Ensure the commit message adheres to the format specified in
-                  `CLAUDE.md` (e.g., Conventional Commits)."
-                  * *Example for a refactoring command:* "Prioritize maintainability and follow the design patterns
-                  outlined in `CLAUDE.md`."
-                  * **MCP Tool Usage (if applicable):**
-                  * If `available_mcp_tools_from_smithery` are provided and a tool is directly relevant to the command's
-                  purpose (e.g., a web search tool for a research command, a database tool for a data-related command),
-                  explicitly instruct Claude Code within the Markdown to use that specific MCP tool.
-                  * For Smithery tools, use the detailed information provided in the `<tool_server>` elements
-                    (especially its `name` attribute which is the `SERVER_KEY`) and its nested `<mcp_tool>` elements
-                      (its `name` attribute is the `TOOL_FUNCTION_NAME`, and `invocation_example` shows the full
-                      command).
-                      * The tool invocation format is `mcp__SERVER_KEY__TOOL_FUNCTION_NAME`. The `SERVER_KEY` is the
-                      `name` attribute of the `<tool_server>` element (e.g., "exa", "owner/repo"). The
-                        `TOOL_FUNCTION_NAME` is the `name` attribute of the `<mcp_tool>` element.
-                          * *Example:* "Use the `mcp__exa__web_search_exa` tool to find recent articles on $ARGUMENTS."
-                          or "Fetch the schema for the '$ARGUMENTS' table using the
-                          `mcp__your_db_server_qualified_name__execute_sql` tool. Refer to the `invocation_example` for
-                          the exact tool string."
-                          * **Desired Output/Format (from Claude Code):** Guide Claude Code on the expected output of
-                          the command. Example: "Provide your findings as a structured Markdown report." or "Generate
-                          the Python code directly into the specified file."
-                          * **Step-by-Step Instructions (for complex commands):** For commands involving multiple steps,
-                          break them down clearly in the Markdown. You might instruct Claude Code to "Think
-                          step-by-step" or "First, outline a plan for $ARGUMENTS. Then, seek confirmation before
-                          proceeding with implementation."
-                          4. **Tailor to Inferred Project Archetype:** Adapt the command's content and examples based on
-                          the project archetype inferred in Phase 1.
-                          * *Example for a 'deploy' command:*
-                          * If Web App (Next.js): "Guide Claude to use `npm run build` and then suggest `vercel deploy`
-                          or similar, referencing `CLAUDE.md` for deployment specifics."
-                          * If Backend API (Dockerized): "Instruct Claude to build the Docker image and suggest
-                          `docker-compose up`, referencing `CLAUDE.md` for environment variables."
-                          * *Example for a 'generate-component' command:*
-                          * If React Web App: "Scaffold a new React functional component named `$ARGUMENTS` in the
-                          `src/components/` directory, including basic JSX, prop types (if applicable), and a
-                          corresponding CSS module, following patterns in `CLAUDE.md`."
-                          * If Angular Web App: "Use Angular CLI conventions (if known from `CLAUDE.md` or common
-                          practice) to generate a new component named `$ARGUMENTS`."
-                          5. **Conciseness:** While being comprehensive, ensure the generated Markdown for each command
-                          is reasonably concise.
+  **Phase 2: Generating Markdown Content for Each Custom Command**
+  For each `<command>` specified in the `<command_definitions>`:
+    1.  **Understand Command Intent:** Use the `description` attribute of the `<command>` and its parent
+        `<category>` as the primary guide for the command's purpose.
 
-                          **Output Format Requirements**
-                          Your output MUST be a single, valid JSON object with the following structure:
-                          ```json
-                          {
-                          "category_name_1": {
-                          "command_name_1": "Markdown content for command 1...",
-                          "command_name_2": "Markdown content for command 2..."
-                          },
-                          "category_name_2": {
-                          "command_name_3": "Markdown content for command 3..."
-                          }
-                          }
-                          ```
-                          - Top-level keys MUST be category names, matching exactly those in `<command_definitions>`.
-                            - Nested keys MUST be command names, matching exactly those in `<command_definitions>`.
-                              - The value for each command name MUST be the complete Markdown content for that custom
-                              command.
+    2.  **Craft an Effective Prompt for Claude Code:** The Markdown content you generate for each command
+        *is itself a prompt* that will be used by Claude Code. It must be well-engineered. Strive to make each
+        command:
+        *   **Clear and Specific:** Ambiguity leads to poor results.
+        *   **Action-Oriented:** Clearly state what Claude Code should do.
+        *   **Context-Aware:** Leverage the project analysis from Phase 1.
 
-                              **IMPORTANT:** Your entire response must ONLY be this JSON object. Do not include any
-                              explanations, apologies, or any text outside the JSON structure. Do not use Markdown code
-                              fences (```json ... ```) around the JSON output.
+    3.  **Key Elements to Incorporate into the Generated Markdown:**
+        *   **`$ARGUMENTS` Placeholder:** If the command is designed to accept user input (e.g., a file path, a
+            feature name), use the `$ARGUMENTS` placeholder in the Markdown. Explain briefly in the command how
+            `$ARGUMENTS` will be used if not obvious.
+        *   **Integration with `CLAUDE.md`:** Crucially, instruct Claude Code to refer to the project's
+            `CLAUDE.md` file for relevant project-specific standards, conventions, or context. Be specific about
+            *what* to look for in `CLAUDE.md` based on the command's purpose.
+            *   *Example for a test generation command:* "Consult `CLAUDE.md` for the project's designated testing
+                framework, preferred assertion libraries, test file naming conventions, and any guidelines on mock
+                data generation."
+            *   *Example for a Git commit command:* "Ensure the commit message adheres to the format specified in
+                `CLAUDE.md` (e.g., Conventional Commits)."
+            *   *Example for a refactoring command:* "Prioritize maintainability and follow the design patterns
+                outlined in `CLAUDE.md`."
+        *   **MCP Tool Usage (if applicable):**
+            *   If `available_mcp_tools_from_smithery` are provided and a tool is directly relevant to the command's
+                purpose (e.g., a web search tool for a research command, a database tool for a data-related command),
+                explicitly instruct Claude Code within the Markdown to use that specific MCP tool.
+            *   For Smithery tools, use the detailed information provided in the `<tool_server>` elements
+                (especially its `name` attribute which is the `SERVER_KEY`) and its nested `<mcp_tool>` elements
+                (its `name` attribute is the `TOOL_FUNCTION_NAME`, and `invocation_example` shows the full
+                command).
+                *   The tool invocation format is `mcp__SERVER_KEY__TOOL_FUNCTION_NAME`. The `SERVER_KEY` is the
+                    `name` attribute of the `<tool_server>` element (e.g., "exa", "owner/repo"). The
+                    `TOOL_FUNCTION_NAME` is the `name` attribute of the `<mcp_tool>` element.
+                *   *Example:* "Use the `mcp__exa__web_search_exa` tool to find recent articles on $ARGUMENTS."
+                    or "Fetch the schema for the '$ARGUMENTS' table using the
+                    `mcp__your_db_server_qualified_name__execute_sql` tool. Refer to the `invocation_example` for
+                    the exact tool string."
+        *   **Desired Output/Format (from Claude Code):** Guide Claude Code on the expected output of
+            the command. Example: "Provide your findings as a structured Markdown report." or "Generate
+            the Python code directly into the specified file."
+        *   **Step-by-Step Instructions (for complex commands):** For commands involving multiple steps,
+            break them down clearly in the Markdown. You might instruct Claude Code to "Think
+            step-by-step" or "First, outline a plan for $ARGUMENTS. Then, seek confirmation before
+            proceeding with implementation."
+
+    4.  **Tailor to Inferred Project Archetype:** Adapt the command's content and examples based on
+        the project archetype inferred in Phase 1.
+        *   *Example for a 'deploy' command:*
+            *   If Web App (Next.js): "Guide Claude to use `npm run build` and then suggest `vercel deploy`
+                or similar, referencing `CLAUDE.md` for deployment specifics."
+            *   If Backend API (Dockerized): "Instruct Claude to build the Docker image and suggest
+                `docker-compose up`, referencing `CLAUDE.md` for environment variables."
+        *   *Example for a 'generate-component' command:*
+            *   If React Web App: "Scaffold a new React functional component named `$ARGUMENTS` in the
+                `src/components/` directory, including basic JSX, prop types (if applicable), and a
+                corresponding CSS module, following patterns in `CLAUDE.md`."
+            *   If Angular Web App: "Use Angular CLI conventions (if known from `CLAUDE.md` or common
+                practice) to generate a new component named `$ARGUMENTS`."
+
+    5.  **Conciseness:** While being comprehensive, ensure the generated Markdown for each command
+        is reasonably concise.
+
+  **Output Format Requirements**
+  Your output MUST be a single, valid JSON object with the following structure:
+  ```json
+  {
+    "category_name_1": {
+      "command_name_1": "Markdown content for command 1...",
+      "command_name_2": "Markdown content for command 2..."
+    },
+    "category_name_2": {
+      "command_name_3": "Markdown content for command 3..."
+    }
+  }
+  ```
+  - Top-level keys MUST be category names, matching exactly those in `<command_definitions>`.
+  - Nested keys MUST be command names, matching exactly those in `<command_definitions>`.
+  - The value for each command name MUST be the complete Markdown content for that custom command.
+
+  **IMPORTANT:** Your entire response must ONLY be this JSON object. Do not include any
+  explanations, apologies, or any text outside the JSON structure. Do not use Markdown code
+  fences (```json ... ```) around the JSON output.
 </task_instructions>
 
 <example_json_output_format>
   {
-  "code-review": {
-  "review-file": "Analyze and perform a code review for the the file provided in $ARGUMENTS.\nYour review should focus
-  on:\n1. **Code Quality & Clarity:** Readability, maintainability, simplicity.\n2. **Potential Bugs & Edge Cases:**
-  Identify any logical errors or scenarios not handled.\n3. **Adherence to Standards:** Check against coding standards,
-  patterns, and best practices defined in our project's `CLAUDE.md`.\n4. **Performance Implications:** Note any
-  potential performance bottlenecks.\n5. **Security Vulnerabilities:** Look for common security flaws (e.g., OWASP Top
-  10 relevant to the code).\n\nProvide specific, actionable feedback as a numbered list. Reference file names and line
-  numbers where applicable. If `CLAUDE.md` specifies a review checklist, ensure all points are covered.",
-  "suggest-refactor": "Analyze the code in file $ARGUMENTS. Identify areas that could benefit from refactoring for
-  improved readability, maintainability, performance, or adherence to modern language features or design patterns
-  discussed in `CLAUDE.md`.\n\nFor each suggested refactoring:\n1. Describe the current problem or suboptimality.\n2.
-  Propose a specific change or approach.\n3. Briefly explain the benefits of the proposed refactoring.\n\nPresent your
-  suggestions clearly. If possible, provide small code snippets illustrating the 'before' and 'after'."
-  },
-  "test-generation": {
-  "generate-unit-tests": "Generate comprehensive unit tests for the file, class, or function specified by
-  $ARGUMENTS.\n\nKey considerations:\n- **Framework & Patterns:** Adhere strictly to the testing framework (e.g., Jest,
-  PyTest, JUnit) and patterns outlined in `CLAUDE.md`.\n- **Coverage:** Aim for thorough coverage including:\n - Core
-  functionality (happy paths).\n - Common usage scenarios.\n - Edge cases (e.g., empty inputs, nulls, boundary
-  values).\n - Error handling (e.g., ensure expected exceptions are thrown for invalid inputs).\n- **Mocks & Stubs:**
-  Use mocking/stubbing for external dependencies as per guidelines in `CLAUDE.md`.\n- **Readability:** Tests should be
-  clear and easy to understand.\n\nThe generated tests should be self-contained and ready to run in our project
-  environment. If a relevant Smithery tool is available (e.g., for searching documentation or examples), consult
-  `CLAUDE.md` for its invocation string (like `mcp__some_server_qname__find_examples`) and consider using it to find
-  testing patterns for libraries used in `$ARGUMENTS`."
-  },
-  "git-workflow": {
-  "create-commit": "Stage all current changes and create a Git commit. The commit message should be:
-  \"$ARGUMENTS\".\n\nIMPORTANT: The commit message MUST follow the Conventional Commits specification as detailed in our
-  project's `CLAUDE.md`. If `CLAUDE.md` also specifies rules for commit scope or associated ticket numbers, ensure those
-  are followed.\n\nExecute the necessary git commands. After committing, report the commit hash."
-  }
+    "code-review": {
+      "review-file": "Analyze and perform a code review for the the file provided in $ARGUMENTS.\nYour review should focus on:\n1. **Code Quality & Clarity:** Readability, maintainability, simplicity.\n2. **Potential Bugs & Edge Cases:** Identify any logical errors or scenarios not handled.\n3. **Adherence to Standards:** Check against coding standards, patterns, and best practices defined in our project's `CLAUDE.md`.\n4. **Performance Implications:** Note any potential performance bottlenecks.\n5. **Security Vulnerabilities:** Look for common security flaws (e.g., OWASP Top 10 relevant to the code).\n\nProvide specific, actionable feedback as a numbered list. Reference file names and line numbers where applicable. If `CLAUDE.md` specifies a review checklist, ensure all points are covered.",
+      "suggest-refactor": "Analyze the code in file $ARGUMENTS. Identify areas that could benefit from refactoring for improved readability, maintainability, performance, or adherence to modern language features or design patterns discussed in `CLAUDE.md`.\n\nFor each suggested refactoring:\n1. Describe the current problem or suboptimality.\n2. Propose a specific change or approach.\n3. Briefly explain the benefits of the proposed refactoring.\n\nPresent your suggestions clearly. If possible, provide small code snippets illustrating the 'before' and 'after'."
+    },
+    "test-generation": {
+      "generate-unit-tests": "Generate comprehensive unit tests for the file, class, or function specified by $ARGUMENTS.\n\nKey considerations:\n- **Framework & Patterns:** Adhere strictly to the testing framework (e.g., Jest, PyTest, JUnit) and patterns outlined in `CLAUDE.md`.\n- **Coverage:** Aim for thorough coverage including:\n  - Core functionality (happy paths).\n  - Common usage scenarios.\n  - Edge cases (e.g., empty inputs, nulls, boundary values).\n  - Error handling (e.g., ensure expected exceptions are thrown for invalid inputs).\n- **Mocks & Stubs:** Use mocking/stubbing for external dependencies as per guidelines in `CLAUDE.md`.\n- **Readability:** Tests should be clear and easy to understand.\n\nThe generated tests should be self-contained and ready to run in our project environment. If a relevant Smithery tool is available (e.g., for searching documentation or examples), consult `CLAUDE.md` for its invocation string (like `mcp__some_server_qname__find_examples`) and consider using it to find testing patterns for libraries used in `$ARGUMENTS`."
+    },
+    "git-workflow": {
+      "create-commit": "Stage all current changes and create a Git commit. The commit message should be: \"$ARGUMENTS\".\n\nIMPORTANT: The commit message MUST follow the Conventional Commits specification as detailed in our project's `CLAUDE.md`. If `CLAUDE.md` also specifies rules for commit scope or associated ticket numbers, ensure those are followed.\n\nExecute the necessary git commands. After committing, report the commit hash."
+    }
   }
 </example_json_output_format>
 
