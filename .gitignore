@@ -30,3 +30,7 @@ test_plan.md
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# cc-bootstrap generated files
+.cc-bootstrap-prompts/
+CLAUDE.md

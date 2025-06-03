@@ -488,6 +488,8 @@ def bootstrap(
                 cli_params["dry_run"],
                 cli_params["enable_thinking"],
                 cli_params["thinking_budget"],
+                cli_params["verbose"],
+                str(cli_params["project_path"]),
             )
         format_success(
             f"LLM interface initialized: Provider={llm.provider_type}, Model={llm.model}"

@@ -5,9 +5,11 @@ This module handles all communication with LLM APIs, including
 prompt construction, response parsing, and error handling.
 """
 
+import json
 import logging
 import os
 import sys
+from datetime import datetime
 from typing import Dict, Optional
 
 from jinja2 import Environment, FileSystemLoader
@@ -37,6 +39,8 @@ class LLMInterface:
         dry_run: bool = False,
         enable_thinking: bool = False,
         thinking_budget: int = 0,
+        verbose: bool = False,
+        project_path: Optional[str] = None,
     ):
         """
         Initialize the LLM interface.
@@ -50,12 +54,21 @@ class LLMInterface:
             dry_run: If True, will simulate API calls instead of making them.
             enable_thinking: If True, will enable extended thinking/reasoning.
             thinking_budget: Token budget for thinking (if enabled).
+            verbose: If True, will save prompts to markdown files.
+            project_path: Path to the project directory (used for saving prompts).
         """
         self.logger = logging.getLogger(__name__)
         self.provider_type = provider
         self.dry_run = dry_run
         self.enable_thinking = enable_thinking
         self.thinking_budget = thinking_budget
+        self.verbose = verbose
+        self.project_path = project_path or os.getcwd()
+        self.prompt_counter = 0
+        self.prompt_session_dir = None
+        
+        if self.verbose:
+            self._setup_prompt_directory()
 
         if (
             model == GENERIC_DEFAULT_LLM_MODEL
@@ -122,6 +135,68 @@ class LLMInterface:
             self.logger.error(f"Failed to initialize {provider} provider: {e}")
             sys.exit(1)
 
+    def _setup_prompt_directory(self):
+        """Create directory for saving prompts in verbose mode."""
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.prompt_session_dir = os.path.join(
+            self.project_path, 
+            ".cc-bootstrap-prompts", 
+            timestamp
+        )
+        os.makedirs(self.prompt_session_dir, exist_ok=True)
+        self.logger.debug(f"Created prompt directory: {self.prompt_session_dir}")
+
+    def _save_prompt_to_file(self, prompt_template: str, prompt: str, 
+                            system_prompt: str, context: Dict):
+        """Save prompt to markdown file in verbose mode."""
+        if not self.verbose or not self.prompt_session_dir:
+            return
+        
+        self.prompt_counter += 1
+        template_name = os.path.basename(prompt_template).replace('.j2', '')
+        filename = f"{self.prompt_counter:03d}_{template_name}.md"
+        filepath = os.path.join(self.prompt_session_dir, filename)
+        
+        # Create markdown content
+        content = f"""# LLM Prompt: {template_name}
+
+Generated at: {datetime.now().isoformat()}
+Template: {prompt_template}
+Model: {self.model}
+Provider: {self.provider_type}
+
+## System Prompt
+
+{system_prompt}
+
+## User Prompt
+
+{prompt}
+
+## Context Keys
+
+{json.dumps(list(context.keys()), indent=2)}
+"""
+        
+        with open(filepath, 'w') as f:
+            f.write(content)
+        
+        self.logger.debug(f"Saved prompt to: {filepath}")
+        
+        # Also save metadata file
+        metadata_path = os.path.join(self.prompt_session_dir, "metadata.json")
+        metadata = {
+            "session_start": self.prompt_session_dir.split('/')[-1],
+            "project_path": self.project_path,
+            "model": self.model,
+            "provider": self.provider_type,
+            "total_prompts": self.prompt_counter,
+            "enable_thinking": self.enable_thinking,
+            "thinking_budget": self.thinking_budget
+        }
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=2)
+
     def _render_template(self, template_path: str, context: Dict) -> str:
         """
         Render a template with the given context.
@@ -162,6 +237,21 @@ class LLMInterface:
                 f"Prompt is very long ({prompt_length} chars). Consider reducing input size."
             )
 
+        # Define system prompt early so it can be saved in verbose mode
+        system_prompt = "You are an expert software developer tasked with creating configuration files for Anthropic's Claude Code. Claude Code is an AI coding assistant that runs in the terminal. Generate professional, well-structured, and comprehensive content for the requested configuration file."
+
+        # Display the prompt in verbose mode
+        self.logger.debug("=" * 50)
+        self.logger.debug("=== PROMPT TEMPLATE ===")
+        self.logger.debug(f"{prompt_template}")
+        self.logger.debug("=== RENDERED PROMPT ===")
+        self.logger.debug(f"{prompt}")
+        self.logger.debug("=== SYSTEM PROMPT ===")
+        self.logger.debug(f"{system_prompt}")
+        
+        # Save prompt to file if in verbose mode (even in dry run)
+        self._save_prompt_to_file(prompt_template, prompt, system_prompt, context)
+
         if self.dry_run:
             self.logger.info("DRY RUN: Would send the following prompt to LLM API:")
             self.logger.info(f"Template: {prompt_template}")
@@ -170,23 +260,10 @@ class LLMInterface:
 
             return f"[This is a placeholder response for dry run. Would generate content based on {prompt_template}]"
 
-        # Display the prompt in verbose mode
-        self.logger.debug("=" * 50)
-        self.logger.debug("=== PROMPT TEMPLATE ===")
-        self.logger.debug(f"{prompt_template}")
-        self.logger.debug("=== RENDERED PROMPT ===")
-        self.logger.debug(f"{prompt}")
-
         try:
             self.logger.debug(
                 f"Sending prompt to {self.model} via {self.provider_type}..."
             )
-
-            system_prompt = "You are an expert software developer tasked with creating configuration files for Anthropic's Claude Code. Claude Code is an AI coding assistant that runs in the terminal. Generate professional, well-structured, and comprehensive content for the requested configuration file."
-
-            # Display the system prompt in verbose mode
-            self.logger.debug("=== SYSTEM PROMPT ===")
-            self.logger.debug(f"{system_prompt}")
 
             if self.enable_thinking:
                 max_tokens_to_use = MAX_TOKENS_THINKING_ENABLED
